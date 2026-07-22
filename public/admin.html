@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>بوابة الإدارة — ISP Billing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:      #f43f5e;
+      --red-dark: #be123c;
+      --bg:       #0a0f1e;
+      --card:     #111827;
+      --border:   rgba(244,63,94,0.18);
+      --text:     #f8fafc;
+      --muted:    #94a3b8;
+      --input-bg: #0f172a;
+      --radius:   16px;
+      --shadow:   0 25px 60px rgba(0,0,0,0.6);
+      --trans:    0.25s ease;
+    }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    .bg-glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(244,63,94,0.12) 0%, transparent 70%);
+      top: -200px; right: -200px;
+      animation: pulse 6s ease-in-out infinite;
+    }
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(244,63,94,0.08) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
+      animation: pulse 6s ease-in-out infinite 3s;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.15); opacity: 0.7; }
+    }
+
+    /* ── Card ── */
+    .card {
+      position: relative; z-index: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 440px;
+      animation: slideUp 0.4s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Logo ── */
+    .logo {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .logo-icon {
+      width: 72px; height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 24px rgba(244,63,94,0.35);
+    }
+    .logo h1 {
+      font-size: clamp(1.3rem, 4vw, 1.6rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, var(--red) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+    .logo p {
+      font-size: clamp(0.78rem, 2.5vw, 0.88rem);
+      color: var(--muted);
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .input-wrap { position: relative; }
+    .input-wrap .icon {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Tajawal', sans-serif;
+      font-size: clamp(0.9rem, 3vw, 1rem);
+      padding: 12px 42px 12px 44px;
+      outline: none;
+      transition: border-color var(--trans), box-shadow var(--trans);
+    }
+    input::placeholder { color: #475569; }
+    input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(244,63,94,0.15);
+    }
+    .toggle-pass {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 1rem;
+      transition: color var(--trans);
+      padding: 4px;
+    }
+    .toggle-pass:hover { color: var(--text); }
+
+    /* ── Error ── */
+    .error-box {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #fca5a5;
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .error-box.show { display: flex; }
+
+    /* ── Submit button ── */
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: #fff;
+      font-family: 'Tajawal', sans-serif;
+      font-size: clamp(0.95rem, 3vw, 1.05rem);
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity var(--trans), box-shadow var(--trans), transform var(--trans);
+    }
+    .btn-submit:hover:not(:disabled) {
+      box-shadow: 0 8px 24px rgba(244,63,94,0.4);
+      transform: translateY(-1px);
+    }
+    .btn-submit:active:not(:disabled) { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* spinner */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 0.78rem;
+      color: #334155;
+    }
+
+    /* ── Mobile tweaks ── */
+    @media (max-width: 480px) {
+      .card { padding: 32px 22px; }
+      .logo-icon { width: 60px; height: 60px; font-size: 1.7rem; border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <h1>ISP Master Portal</h1>
+      <p>بوابة الإدارة الرئيسية — المدير العام</p>
+    </div>
+
+    <div class="error-box" id="error-box">
+      <span>⚠️</span>
+      <span id="error-text"></span>
+    </div>
+
+    <form id="login-form" autocomplete="off">
+      <div class="form-group">
+        <label for="username">اسم المستخدم</label>
+        <div class="input-wrap">
+          <span class="icon">👤</span>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="اسم مستخدم المدير"
+            autocomplete="username"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">كلمة المرور</label>
+        <div class="input-wrap">
+          <span class="icon">🔑</span>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="كلمة المرور السرية"
+            autocomplete="current-password"
+            required
+          />
+          <button type="button" class="toggle-pass" id="toggle-pass" tabindex="-1">👁️</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="login-btn">
+        <span id="login-text">تسجيل الدخول كمسؤول 🛡️</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+    </form>
+
+    <div class="footer">© 2025 ISP Billing System — لوحة تحكم المدير</div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Redirect only if already logged in as superadmin
+    if (API.isLoggedIn()) {
+      const u = API.getCurrentUser();
+      if (u?.role === 'superadmin') {
+        window.location.href = 'users.html';
+      }
+    }
+
+    // Toggle password visibility
+    document.getElementById('toggle-pass').addEventListener('click', () => {
+      const inp = document.getElementById('password');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    });
+
+    // Login form submit
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn      = document.getElementById('login-btn');
+      const errBox   = document.getElementById('error-box');
+      const errText  = document.getElementById('error-text');
+      const spinner  = document.getElementById('spinner');
+      const loginTxt = document.getElementById('login-text');
+
+      // Reset error
+      errBox.classList.remove('show');
+
+      // Loading state
+      btn.disabled   = true;
+      loginTxt.style.display = 'none';
+      spinner.style.display  = 'block';
+
+      function showError(msg) {
+        errText.textContent = msg;
+        errBox.classList.add('show');
+      }
+
+      try {
+        const data = await API.post('/auth/login', {
+          username: document.getElementById('username').value.trim(),
+          password: document.getElementById('password').value,
+        });
+
+        if (data?.success) {
+          if (data.data.user.role !== 'superadmin') {
+            showError('هذا الحساب غير مصرح له بالدخول كمسؤول للنظام');
+            return;
+          }
+          API.saveTokens(data.data.accessToken, data.data.refreshToken);
+          API.setCurrentUser(data.data.user);
+          
+          loginTxt.textContent = 'جاري تهيئة البيانات...';
+          loginTxt.style.display = 'inline';
+          spinner.style.display = 'inline';
+          
+          API.precacheAllData().catch(() => {}).finally(() => {
+            window.location.href = 'users.html';
+          });
+        } else {
+          showError(data?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
+        }
+      } catch (err) {
+        showError('خطأ في الاتصال بالخادم، تأكد من أن الخادم يعمل');
+      } finally {
+        btn.disabled = false;
+        loginTxt.style.display = 'inline';
+        spinner.style.display  = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

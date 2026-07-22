@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الإعدادات — ISP Billing System</title>
+  <link rel="stylesheet" href="css/app.css?v=112" />
+  <link rel="icon" href="img/logo.png" type="image/png" />
+  <style>
+    .upload-zone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent-1);
+      background: rgba(79, 142, 247, 0.05);
+      transform: translateY(-2px);
+    }
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .file-input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .preview-card {
+      margin-top: 24px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-download-template {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    .btn-download-template:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--text-secondary);
+    }
+    .mapping-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .badge-mapped { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .badge-unmapped { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+    /* Responsive Grid Styles */
+    .cashbox-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .cashbox-lists-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .offline-sync-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .cashbox-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .cashbox-lists-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .offline-sync-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .form-row {
+        flex-direction: column !important;
+        gap: 12px !important;
+      }
+      .card-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+      }
+      .card-header .btn, .card-header .form-control {
+        width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="toast-container" class="toast-container"></div>
+
+  <!-- Sidebar -->
+  <nav class="app-sidebar" id="app-sidebar">
+    <div class="app-sidebar-logo">
+      <img class="logo-img" src="img/logo.png" alt="Logo" />
+      <h2>ISP Billing</h2>
+      <p>نظام موزعي الإنترنت</p>
+    </div>
+    <div class="app-sidebar-nav">
+      <div class="nav-section-title">الرئيسية</div>
+      <a href="dashboard.html"    class="nav-item"><span class="nav-icon">🏠</span> لوحة التحكم</a>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">👥</span> الزبائن</a>
+      <a href="obligations.html"  class="nav-item"><span class="nav-icon">📦</span> المستحقات</a>
+      <a href="settings.html"     class="nav-item active"><span class="nav-icon">⚙️</span> الإعدادات</a>
+    </div>
+  </nav>
+
+  <!-- Floating Capsule Bottom Navigation for Mobile -->
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">🏠</span>
+      <span class="bottom-nav-label">الرئيسية</span>
+    </a>
+    <a href="customers.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">👥</span>
+      <span class="bottom-nav-label">الزبائن</span>
+    </a>
+    <a href="obligations.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">📦</span>
+      <span class="bottom-nav-label">المستحقات</span>
+    </a>
+    <a href="settings.html" class="bottom-nav-item active">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">الإعدادات</span>
+    </a>
+  </nav>
+
+<div class="app-shell">
+  <div class="main-content">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="topbar-toggle" id="app-sidebar-toggle">☰</button>
+        <div class="topbar-title">
+          <h1>⚙️ إعدادات النظام</h1>
+          <p>تهيئة واستيراد البيانات وإدارة لوحة التحكم</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Current Account Card -->
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-body" style="padding:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+          <div style="display:flex;align-items:center;gap:16px">
+            <div class="user-avatar" id="settings-user-avatar" style="width:54px;height:54px;border-radius:50%;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:bold;color:white">?</div>
+            <div>
+              <h3 id="settings-user-name" style="margin:0;font-size:1.25rem">...</h3>
+              <p id="settings-user-role" style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">...</p>
+            </div>
+          </div>
+          <button class="btn btn-danger" onclick="logout()" style="display:flex;align-items:center;gap:8px;padding:10px 20px;font-weight:bold">
+            🚪 تسجيل الخروج
+          </button>
+        </div>
+      </div>
+
+      <!-- Install App Card -->
+      <div class="card" id="pwa-install-card" style="margin-bottom:24px;">
+        <div class="card-header">
+          <h3>📲 تثبيت التطبيق على الهاتف (iPhone / Android)</h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">قم بتثبيت تطبيق الفواتير على الشاشة الرئيسية لهاتفك للوصول السريع وتشغيله كتطبيق مستقل حتى بدون إنترنت.</p>
+        </div>
+        <div class="card-body" style="padding:24px">
+          <!-- Standalone (Installed) Mode -->
+          <div id="pwa-installed-msg" style="display:none; text-align:center; padding:16px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:var(--radius-md)">
+            <span style="font-size:2rem; display:block; margin-bottom:8px">🎉</span>
+            <strong style="color:var(--success)">التطبيق مثبت بالفعل على جهازك ويعمل كتطبيق مستقل!</strong>
+          </div>
+
+          <!-- Browser Supports Automated Install (Android / Chrome) -->
+          <div id="pwa-install-android" style="display:none; text-align:center; padding:20px; background:rgba(79,142,247,0.08); border:1px solid rgba(79,142,247,0.2); border-radius:var(--radius-md)">
+            <span style="font-size:2.5rem; display:block; margin-bottom:12px">📱</span>
+            <h4 style="margin-bottom:8px; color:var(--accent-1)">تثبيت التطبيق على جهاز الأندرويد أو الحاسوب</h4>
+            <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:16px; line-height:1.5">يمكنك تثبيت النظام على هاتفك الذكي للوصول إليه كأيقونة مستقلة سريعة في شاشتك الرئيسية.</p>
+            <button class="btn btn-primary" id="btn-pwa-install-trigger" style="padding:12px 28px; font-weight:bold; font-size:0.95rem; border-radius:30px; display:inline-flex; align-items:center; gap:8px">
+              ✨ تثبيت التطبيق الآن
+            </button>
+          </div>
+
+          <!-- iOS (iPhone / iPad) Guide -->
+          <div id="pwa-install-ios" style="display:none; padding:20px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:var(--radius-md)">
+            <div style="text-align:center; margin-bottom:16px">
+              <span style="font-size:2.5rem; display:block; margin-bottom:8px">🍏</span>
+              <h4 style="color:var(--warning)">خطوات التثبيت على أجهزة الـ iPhone (آيفون)</h4>
+              <p style="color:var(--text-secondary); font-size:0.85rem">متصفح السفاري في الآيفون يتطلب تثبيت التطبيق يدوياً باتباع الخطوات التالية:</p>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:12px; max-width:480px; margin:0 auto; font-size:0.9rem">
+              <div style="display:flex; align-items:center; gap:12px; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px">
+                <span style="background:var(--warning); color:black; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.8rem">1</span>
+                <span>افتح هذا الرابط في متصفح **Safari** الافتراضي للآيفون.</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px">
+                <span style="background:var(--warning); color:black; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.8rem">2</span>
+                <span style="display:flex; align-items:center; gap:6px">اضغط على زر **مشاركة (Share)** <span style="font-size:1.2rem">⎋</span> في شريط المتصفح السفلي.</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px">
+                <span style="background:var(--warning); color:black; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.8rem">3</span>
+                <span>قم بالتمرير للأسفل واختر **إضافة إلى الشاشة الرئيسية (Add to Home Screen)**.</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px">
+                <span style="background:var(--warning); color:black; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.8rem">4</span>
+                <span>اضغط على **إضافة (Add)** في الزاوية العلوية لتثبيته كـ تطبيق على هاتفك.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- General Unsupported / Already checked banner -->
+          <div id="pwa-install-unsupported" style="display:none; text-align:center; padding:16px; color:var(--text-secondary); font-size:0.85rem">
+            ℹ️ لتنزيل التطبيق على هاتفك، يرجى فتحه عبر متصفح **Google Chrome** (للأندرويد) أو **Safari** (للآيفون) ثم استخدام خيار "التثبيت" أو "إضافة إلى الشاشة الرئيسية".
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Cashbox Card -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div>
+            <h3>💼 الصندوق اليومي للجابي (Cashbox)</h3>
+            <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">تتبع المبالغ المحصلة من الزبائن والمصاريف المدفوعة لمعرفة الكاش المتبقي مع الجابي.</p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-ghost" id="send-cashbox-whatsapp-btn" onclick="sendCashboxReportWhatsapp()" style="font-size:0.85rem; padding:8px 16px; display:none; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); color:#22c55e;">💬 إرسال التقرير للمدير</button>
+            <input type="date" id="cashbox-date" class="form-control" style="width:auto;min-width:160px;font-size:0.9rem" />
+          </div>
+        </div>
+        <div class="card-body" style="padding:24px">
+          <!-- Cashbox Stats Grid -->
+          <div class="cashbox-stats-grid">
+            <div class="stat-card" style="--stat-color: #22c55e; padding:16px">
+              <div class="stat-icon" style="font-size:1.5rem">💰</div>
+              <div class="stat-value" id="cash-collected" style="font-size:1.4rem">—</div>
+              <div class="stat-label" style="font-size:0.8rem">ضبيت اليوم (المقبوضات)</div>
+            </div>
+            <div class="stat-card" style="--stat-color: #ef4444; padding:16px">
+              <div class="stat-icon" style="font-size:1.5rem">💸</div>
+              <div class="stat-value" id="cash-paid" style="font-size:1.4rem">—</div>
+              <div class="stat-label" style="font-size:0.8rem">دفعت اليوم (المصاريف)</div>
+            </div>
+            <div class="stat-card" style="--stat-color: #3b82f6; padding:16px">
+              <div class="stat-icon" style="font-size:1.5rem">📦</div>
+              <div class="stat-value" id="cash-net" style="font-size:1.4rem">—</div>
+              <div class="stat-label" style="font-size:0.8rem">الصافي الفعلي مع الجابي</div>
+            </div>
+          </div>
+
+          <!-- Lists Section -->
+          <div class="cashbox-lists-grid">
+            <!-- Collected List -->
+            <div>
+              <h4 style="margin-bottom:10px;display:flex;align-items:center;gap:6px">📥 سجل المقبوضات اليومية</h4>
+              <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; background:rgba(255,255,255,0.01)" id="cashbox-collected-list">
+                <p class="text-muted" style="text-align:center;padding:20px">لا توجد مقبوضات مسجلة لهذا اليوم</p>
+              </div>
+            </div>
+            <!-- Paid List -->
+            <div>
+              <h4 style="margin-bottom:10px;display:flex;align-items:center;gap:6px">📤 سجل المدفوعات والمصاريف اليومية</h4>
+              <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; background:rgba(255,255,255,0.01)" id="cashbox-paid-list">
+                <p class="text-muted" style="text-align:center;padding:20px">لا توجد مصاريف مدفوعة لهذا اليوم</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manage Collectors Card (Only visible to distributors) -->
+      <div class="card" id="collectors-management-card" style="margin-bottom:24px; display:none;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3>📋 إدارة الجباة التابعين لك</h3>
+            <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">أضف جباة مخصصين لشبكتك وحدد لهم أحياء معينة لجمع الاشتراكات.</p>
+          </div>
+          <div>
+            <button class="btn btn-success" onclick="openAddColModal()">➕ إضافة جابي جديد</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:24px">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>الاسم الكامل</th>
+                  <th>اسم المستخدم</th>
+                  <th>📍 الأحياء المسموحة</th>
+                  <th>الحالة</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="collectors-tbody">
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">لا يوجد جباة مضافين بعد</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Change Password Card -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header">
+          <h3>🔑 تغيير كلمة المرور</h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">تحديث كلمة المرور لحماية حسابك الشخصي.</p>
+        </div>
+        <div class="card-body" style="padding:24px">
+          <form id="change-password-form" onsubmit="event.preventDefault(); changePassword();">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">كلمة المرور الحالية *</label>
+                <input type="password" id="pw-current" class="form-control" placeholder="••••••••" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">كلمة المرور الجديدة *</label>
+                <input type="password" id="pw-new" class="form-control" placeholder="8 أحرف على الأقل" required minlength="8" />
+              </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:16px">
+              <button class="btn btn-primary" type="submit" id="btn-change-pw">💾 تحديث كلمة المرور</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div>
+            <h3>📥 استيراد وتصدير الزبائن (ملف Excel / CSV)</h3>
+            <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">ارفع ملف الإكسيل لاستيراد الزبائن وتوليد فواتيرهم، أو قم بتحميل وتصدير بيانات الزبائن الحاليين وديونهم.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-download-template" onclick="downloadTemplate()">📄 تحميل نموذج تجريبي</button>
+            <button class="btn btn-success" onclick="exportCustomersData()" style="display:flex;align-items:center;gap:6px">📤 تحميل/تصدير الزبائن الحاليين</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:24px">
+          
+          <div class="upload-zone" id="drop-zone">
+            <span class="upload-icon">📊</span>
+            <h4>اسحب ملف الإكسيل هنا أو اضغط للتصفح</h4>
+            <p style="color:var(--text-muted);font-size:0.8rem;margin-top:6px">يدعم صيغ Excel (.xlsx, .xls) أو CSV</p>
+            <input type="file" id="file-input" class="file-input" accept=".xlsx, .xls, .csv" />
+          </div>
+
+          <!-- Preview Card -->
+          <div class="card preview-card" id="preview-card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+              <h4>🔍 معاينة البيانات المكتشفة من الملف</h4>
+              <button class="btn btn-primary" id="btn-start-import" onclick="startImport()">📥 بدء استيراد البيانات</button>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>الاسم بالكامل *</th>
+                      <th>الحي / المنطقة</th>
+                      <th>رقم الهاتف</th>
+                      <th>المبلغ الشهري ($) *</th>
+                      <th>تاريخ الاشتراك *</th>
+                      <th>حالة السجل</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preview-tbody">
+                    <!-- Rows will be injected here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- WhatsApp Templates Card -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header">
+          <h3>📨 قوالب رسائل الواتساب والتذكير</h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">تحكم في نصوص الرسائل التلقائية التي ترسلها لزبائنك عند الدفع أو التذكير بالديون.</p>
+        </div>
+        <div class="card-body" style="padding:24px;display:flex;flex-direction:column;gap:20px">
+          
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-weight:bold;font-size:0.9rem">🟢 رسالة تأكيد الدفع الكامل:</label>
+            <textarea id="temp-receipt-full" class="form-control" style="width:100%;height:80px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:10px;font-family:inherit;font-size:0.88rem;resize:vertical"></textarea>
+            <span style="color:var(--text-muted);font-size:0.75rem">المتغيرات المتاحة: <code>{name}</code> (اسم الزبون)، <code>{amount}</code> (المبلغ المدفوع)</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-weight:bold;font-size:0.9rem">🟡 رسالة تأكيد الدفع الجزئي:</label>
+            <textarea id="temp-receipt-partial" class="form-control" style="width:100%;height:80px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:10px;font-family:inherit;font-size:0.88rem;resize:vertical"></textarea>
+            <span style="color:var(--text-muted);font-size:0.75rem">المتغيرات المتاحة: <code>{name}</code>، <code>{amount}</code>، <code>{remaining}</code> (المبلغ المتبقي)</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-weight:bold;font-size:0.9rem">📢 رسالة تذكير بالديون المتراكمة:</label>
+            <textarea id="temp-reminder" class="form-control" style="width:100%;height:120px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:10px;font-family:inherit;font-size:0.88rem;resize:vertical"></textarea>
+            <span style="color:var(--text-muted);font-size:0.75rem">المتغيرات المتاحة: <code>{name}</code>، <code>{monthly}</code> (الاشتراك الشهري)، <code>{obligations_line}</code> (سطر المستحقات الأخرى)، <code>{obligations}</code> (قيمة المستحقات فقط)، <code>{total}</code> (المجموع المستحق الكلي)</span>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="saveTemplates()">💾 حفظ القوالب</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Offline Sync Card -->
+      <div class="card" style="margin-bottom:24px; display:none;">
+        <div class="card-header">
+          <h3>📲 مشاركة ومزامنة العمليات دون اتصال (Offline Sync)</h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">قم بتصدير العمليات المسجلة محلياً أثناء انقطاع الاتصال لنقلها إلى هاتف أو جهاز آخر لمزامنتها، أو استورد عمليات من جهاز آخر لدمجها هنا.</p>
+        </div>
+        <div class="card-body" style="padding:24px">
+          <div class="offline-sync-grid">
+            <!-- Export Section -->
+            <div style="padding:16px; background:rgba(255,255,255,0.01); border:1px solid var(--border); border-radius:var(--radius-md)">
+              <h4 style="margin-bottom:8px; display:flex; align-items:center; gap:6px">📤 تصدير العمليات المعلقة من هذا الجهاز</h4>
+              <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px">قم بنسخ الرمز النصي أو تحميل ملف العمليات لمشاركته مع الجهاز الآخر ليتمكن من دمجها ومزامنتها.</p>
+              
+              <div style="margin-bottom:12px">
+                <span id="pending-actions-count" class="badge badge-warning" style="font-size:0.85rem; padding:6px 12px">لا توجد عمليات معلقة حالياً</span>
+              </div>
+
+              <div id="export-actions-area" style="display:none">
+                <textarea id="exported-payload" class="form-control" readonly style="width:100%; height:80px; font-family:monospace; font-size:0.75rem; margin-bottom:12px; background:rgba(0,0,0,0.2)"></textarea>
+                <div style="display:flex; gap:8px">
+                  <button class="btn btn-secondary" onclick="copySyncCode()" style="flex:1">📋 نسخ الرمز</button>
+                  <button class="btn btn-secondary" onclick="downloadSyncFile()" style="flex:1">💾 تحميل كملف</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Import Section -->
+            <div style="padding:16px; background:rgba(255,255,255,0.01); border:1px solid var(--border); border-radius:var(--radius-md)">
+              <h4 style="margin-bottom:8px; display:flex; align-items:center; gap:6px">📥 استيراد ودمج عمليات من جهاز آخر</h4>
+              <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px">الصق رمز المزامنة النصي المستخرج من الجهاز الآخر أو ارفع ملف العمليات لدمجه في قاعدة بيانات هذا الجهاز.</p>
+              
+              <div style="display:flex; flex-direction:column; gap:10px">
+                <textarea id="import-payload-input" class="form-control" placeholder="الصق رمز المزامنة المشفر هنا..." style="width:100%; height:80px; font-family:monospace; font-size:0.75rem"></textarea>
+                
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px">
+                  <div style="display:flex; align-items:center; gap:6px">
+                    <label class="btn btn-ghost" style="padding:6px 12px; cursor:pointer; font-size:0.85rem">
+                      📂 رفع ملف المزامنة
+                      <input type="file" id="import-file-input" accept=".txt" style="display:none" onchange="loadSyncFile(event)" />
+                    </label>
+                  </div>
+                  <button class="btn btn-success" onclick="executeImport()" style="padding:10px 20px">📥 دمج العمليات الآن</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Management / Maintenance Card -->
+      <div class="card" style="margin-bottom:24px;border:1px solid rgba(239,68,68,0.2)">
+        <div class="card-header" style="background:rgba(239,68,68,0.02)">
+          <h3 style="color:var(--danger)">⚠️ إدارة وتصفير البيانات (منطقة خطر)</h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px">تصفير وحذف بيانات الزبائن ومستحقات الشبكة بالكامل. يرجى الحذر، لا يمكن التراجع عن هذه العمليات.</p>
+        </div>
+        <div class="card-body" style="padding:24px;display:flex;gap:16px;flex-wrap:wrap">
+          
+          <div style="flex:1;min-width:240px;padding:16px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md)">
+            <h4 style="margin-bottom:8px">👥 تصفير وحذف جميع الزبائن</h4>
+            <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:16px">حذف كامل سجل الزبائن، فواتيرهم، دفعاتهم المالية، والمستحقات الإضافية بالكامل والبدء من الصفر.</p>
+            <button class="btn btn-danger" onclick="clearAllCustomers()" style="width:100%">🗑️ حذف كافة الزبائن</button>
+          </div>
+
+          <div style="flex:1;min-width:240px;padding:16px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md)">
+            <h4 style="margin-bottom:8px">📦 تصفير وحذف مستحقات الشبكة</h4>
+            <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:16px">حذف كافة مصاريف الشبكة والتزاماتها المضافة حالياً وتصفير إجمالي المستحقات بالكامل.</p>
+            <button class="btn btn-danger" onclick="clearAllObligations()" style="width:100%">🗑️ حذف كافة مستحقات الشبكة</button>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<!-- SheetJS CDN to parse Excel files client-side -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+  let parsedCustomers = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = API.getCurrentUser();
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Populate current account info card
+    document.getElementById('settings-user-name').textContent = user.fullName || user.username;
+    document.getElementById('settings-user-role').textContent = user.role === 'superadmin' ? 'مدير عام الشبكة' : 'موزع شبكة معتمد';
+    document.getElementById('settings-user-avatar').textContent = (user.fullName || user.username || '?')[0].toUpperCase();
+
+    // Show collectors card if distributor
+    if (user.role === 'distributor') {
+      document.getElementById('collectors-management-card').style.display = 'block';
+      loadCollectors();
+    }
+
+    // Setup Cashbox
+    document.getElementById('cashbox-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('cashbox-date').addEventListener('change', loadCashboxData);
+    loadCashboxData();
+    
+    // Setup Offline Sync Panel
+    loadOfflineQueueInfo();
+    
+    // Load existing templates or set defaults
+    document.getElementById('temp-receipt-full').value = localStorage.getItem('template_receipt_full') || 'السلام عليكم {name}،\nتم استلام دفعة بقيمة {amount} $ بنجاح (خالص الحساب).\nشكراً لكم لثقتكم بنا';
+    document.getElementById('temp-receipt-partial').value = localStorage.getItem('template_receipt_partial') || 'السلام عليكم {name}،\nتم استلام دفعة جزئية بقيمة {amount} $ بنجاح.\nالمتبقي بذمتكم: {remaining} $.\nشكراً لكم لثقتكم بنا';
+    document.getElementById('temp-reminder').value = localStorage.getItem('template_reminder') || 'السلام عليكم {name}،\n\nنذكركم بمستحقات خدمة الإنترنت:\nاشتراك الإنترنت: {monthly} $\n{obligations_line}\nالمجموع المستحق: {total} $\n\nيرجى الدفع في أقرب وقت ممكن.\nشكراً لكم';
+
+    // Set up drag and drop
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+  });
+
+  function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      try {
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to Array of Arrays
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        if (rows.length < 2) {
+          Toast.error('الملف فارغ أو لا يحتوي على صف عناوين');
+          return;
+        }
+
+        processExcelData(rows);
+      } catch (err) {
+        console.error(err);
+        Toast.error('فشل قراءة الملف، تأكد من سلامة ملف الإكسيل');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function processExcelData(rows) {
+    const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+    
+    // Find column indexes
+    let nameIdx = headers.findIndex(h => h.includes('اسم') || h.includes('name'));
+    let neighIdx = headers.findIndex(h => h.includes('حي') || h.includes('منطق') || h.includes('area') || h.includes('neigh'));
+    let phoneIdx = headers.findIndex(h => h.includes('هاتف') || h.includes('تلفون') || h.includes('جوال') || h.includes('phone') || h.includes('mobile'));
+    let amountIdx = headers.findIndex(h => h.includes('مبلغ') || h.includes('قيمة') || h.includes('اشتراك') || h.includes('سعر') || h.includes('amount') || h.includes('price'));
+    let dateIdx = headers.findIndex(h => h.includes('تاريخ') || h.includes('date'));
+
+    // Fallbacks if not found by name
+    if (nameIdx === -1) nameIdx = 0;
+    if (neighIdx === -1) neighIdx = 1;
+    if (phoneIdx === -1) phoneIdx = 2;
+    if (amountIdx === -1) amountIdx = 3;
+    if (dateIdx === -1) dateIdx = 4;
+
+    parsedCustomers = [];
+    const previewTbody = document.getElementById('preview-tbody');
+    previewTbody.innerHTML = '';
+
+    // Loop through data rows
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+
+      let fullName = row[nameIdx] ? String(row[nameIdx]).trim() : '';
+      let neighborhood = row[neighIdx] ? String(row[neighIdx]).trim() : '';
+      let phone = row[phoneIdx] ? String(row[phoneIdx]).trim() : '';
+      let monthlyAmount = row[amountIdx];
+      let subscriptionDate = row[dateIdx];
+
+      // Parse date if serial number (Excel dates are sometimes numbers)
+      if (typeof subscriptionDate === 'number') {
+        subscriptionDate = formatExcelDate(subscriptionDate);
+      } else if (subscriptionDate) {
+        subscriptionDate = String(subscriptionDate).trim();
+      }
+
+      // Check validation
+      let isValid = true;
+      let errorMsgs = [];
+
+      if (!fullName) { isValid = false; errorMsgs.push('الاسم مفقود'); }
+      
+      const parsedAmount = parseFloat(monthlyAmount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        isValid = false;
+        errorMsgs.push('المبلغ غير صالح');
+      }
+
+      if (!subscriptionDate) {
+        isValid = false;
+        errorMsgs.push('تاريخ الاشتراك مفقود');
+      }
+
+      parsedCustomers.push({
+        fullName,
+        neighborhood,
+        phone,
+        monthlyAmount: parsedAmount,
+        subscriptionDate,
+        isValid
+      });
+
+      // Append row to preview table
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${fullName || '<span class="text-danger">مفقود</span>'}</strong></td>
+        <td>${neighborhood || '<span class="text-muted">—</span>'}</td>
+        <td>${phone || '<span class="text-muted">—</span>'}</td>
+        <td>${!isNaN(parsedAmount) ? formatMoney(parsedAmount) : '<span class="text-danger">غير صالح</span>'}</td>
+        <td>${subscriptionDate || '<span class="text-danger">مفقود</span>'}</td>
+        <td>
+          ${isValid 
+            ? '<span class="badge badge-success">✅ جاهز</span>' 
+            : `<span class="badge badge-danger" title="${errorMsgs.join(', ')}">❌ خطأ: ${errorMsgs[0]}</span>`}
+        </td>
+      `;
+      previewTbody.appendChild(tr);
+    }
+
+    document.getElementById('preview-card').style.display = 'block';
+    Toast.success(`تم تحليل الملف ومعاينة ${parsedCustomers.length} سجل بنجاح`);
+  }
+
+  // Convert Excel numeric date format to YYYY-MM-DD
+  function formatExcelDate(serial) {
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400;
+    const date_info = new Date(utc_value * 1000);
+    const fractional_day = serial - Math.floor(serial) + 0.0000001;
+    let total_seconds = Math.floor(86400 * fractional_day);
+    const seconds = total_seconds % 60;
+    total_seconds -= seconds;
+    const hours = Math.floor(total_seconds / (60 * 60));
+    const minutes = Math.floor(total_seconds / 60) % 60;
+    const d = new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+    
+    // Return YYYY-MM-DD
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+  }
+
+  async function startImport() {
+    const validCustomers = parsedCustomers.filter(c => c.isValid);
+    if (!validCustomers.length) {
+      Toast.warning('لا توجد سجلات صالحة جاهزة للاستيراد');
+      return;
+    }
+
+    const btn = document.getElementById('btn-start-import');
+    btn.disabled = true;
+    btn.textContent = '⏳ جارٍ الاستيراد...';
+
+    try {
+      const res = await API.post('/customers/import', { customers: validCustomers });
+      if (res?.success) {
+        Toast.success(`تم استيراد ${res.data.importedCount} زبون بنجاح وتوليد فواتيرهم المترتبة ✅`);
+        setTimeout(() => {
+          window.location.href = 'customers.html';
+        }, 1500);
+      } else {
+        Toast.error(res?.message || 'فشل استيراد البيانات');
+        btn.disabled = false;
+        btn.textContent = '📥 بدء استيراد البيانات';
+      }
+    } catch (err) {
+      console.error(err);
+      Toast.error('حدث خطأ في الاتصال بالخادم');
+      btn.disabled = false;
+      btn.textContent = '📥 بدء استيراد البيانات';
+    }
+  }
+
+  function downloadTemplate() {
+    // Generate template
+    const wb = XLSX.utils.book_new();
+    const ws_data = [
+      ["الاسم بالكامل", "الحي / المنطقة", "رقم الهاتف", "المبلغ الشهري", "تاريخ الاشتراك"]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "الزبائن");
+    XLSX.writeFile(wb, "ISP_Customers_Template.xlsx");
+  }
+
+
+
+  function saveTemplates() {
+    localStorage.setItem('template_receipt_full', document.getElementById('temp-receipt-full').value.trim());
+    localStorage.setItem('template_receipt_partial', document.getElementById('temp-receipt-partial').value.trim());
+    localStorage.setItem('template_reminder', document.getElementById('temp-reminder').value.trim());
+    Toast.success('تم حفظ قوالب الرسائل بنجاح ✅');
+  }
+
+  async function clearAllCustomers() {
+    Modal.confirm('🚨 تحذير هام جداً: هل أنت متأكد من حذف وتصفير جميع الزبائن، فواتيرهم، سجلات دفعاتهم، ومستحقاتهم نهائياً؟ لا يمكن التراجع عن هذا الإجراء إطلاقاً.', async () => {
+      try {
+        const res = await API.delete('/customers/clear/all');
+        if (res?.success) {
+          Toast.success('تم تصفير وحذف جميع الزبائن بنجاح ✅');
+          await loadCashboxData();
+        } else {
+          Toast.error(res?.message || 'فشل تصفير الزبائن');
+        }
+      } catch (err) {
+        console.error(err);
+        Toast.error('حدث خطأ أثناء الاتصال بالخادم');
+      }
+    });
+  }
+
+  async function clearAllObligations() {
+    Modal.confirm('هل أنت متأكد من حذف وتصفير كافة مستحقات الشبكة المسجلة بالكامل؟ لا يمكن التراجع عن هذا الإجراء.', async () => {
+      try {
+        const res = await API.delete('/obligations/clear/all');
+        if (res?.success) {
+          Toast.success('تم تصفير وحذف كافة مستحقات الشبكة بنجاح ✅');
+          await loadCashboxData();
+        } else {
+          Toast.error(res?.message || 'فشل تصفير مستحقات الشبكة');
+        }
+      } catch (err) {
+        console.error(err);
+        Toast.error('حدث خطأ أثناء الاتصال بالخادم');
+      }
+    });
+  }
+
+  async function changePassword() {
+    const currentPassword = document.getElementById('pw-current').value;
+    const newPassword = document.getElementById('pw-new').value;
+    const btn = document.getElementById('btn-change-pw');
+
+    if (!currentPassword || !newPassword) {
+      Toast.warning('يرجى ملء جميع الحقول المطلوبة');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      Toast.warning('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ جاري الحفظ...';
+
+    try {
+      const res = await API.put('/auth/change-password', { currentPassword, newPassword });
+      if (res?.success) {
+        Toast.success('تم تغيير كلمة المرور بنجاح! سيتم تحويلك لتسجيل الدخول مجدداً ✅');
+        setTimeout(() => {
+          API.clearTokens();
+          window.location.href = 'index.html';
+        }, 2000);
+      } else {
+        Toast.error(res?.message || 'فشل تغيير كلمة المرور');
+        btn.disabled = false;
+        btn.textContent = '💾 تحديث كلمة المرور';
+      }
+    } catch (err) {
+      console.error(err);
+      Toast.error('كلمة المرور الحالية غير صحيحة أو حدث خطأ أثناء الاتصال بالخادم');
+      btn.disabled = false;
+      btn.textContent = '💾 تحديث كلمة المرور';
+    }
+  }
+
+  async function loadCashboxData() {
+    const date = document.getElementById('cashbox-date').value;
+    if (!date) return;
+
+    try {
+      const res = await API.get(`/reports/cashbox?date=${date}`);
+      if (!res?.success) {
+        Toast.error(res?.message || 'فشل تحميل بيانات الصندوق');
+        return;
+      }
+
+      const d = res.data;
+      currentCashboxData = d;
+
+      const sendBtn = document.getElementById('send-cashbox-whatsapp-btn');
+      if (sendBtn) {
+        if (API.getCurrentUser()?.role === 'collector' && d.distributorPhone) {
+          sendBtn.style.display = 'inline-block';
+        } else {
+          sendBtn.style.display = 'none';
+        }
+      }
+
+      document.getElementById('cash-collected').textContent = formatMoney(d.totalCollected);
+      document.getElementById('cash-paid').textContent = formatMoney(d.totalObligations);
+      document.getElementById('cash-net').textContent = formatMoney(d.netCash);
+
+      // Render Collected List
+      const colListEl = document.getElementById('cashbox-collected-list');
+      const allCollected = [...(d.details.payments || []), ...(d.details.extras || [])];
+      if (allCollected.length === 0) {
+        colListEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:20px">لا توجد مقبوضات مسجلة لهذا اليوم</p>';
+      } else {
+        colListEl.innerHTML = allCollected.map(p => {
+          const typeLabel = p.description ? `(مستحق: ${p.description})` : '(اشتراك شهري)';
+          return `
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+              <div>
+                <strong>${p.full_name} ${p.family_name || ''}</strong>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${typeLabel}</div>
+              </div>
+              <strong style="color:var(--success)">+ ${formatMoney(p.amount)}</strong>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Paid List
+      const paidListEl = document.getElementById('cashbox-paid-list');
+      if (d.details.obligations.length === 0) {
+        paidListEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:20px">لا توجد مصاريف مدفوعة لهذا اليوم</p>';
+      } else {
+        paidListEl.innerHTML = d.details.obligations.map(o => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div>
+              <strong>${o.description}</strong>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${o.notes || 'مصاريف شبكة عامة'}</div>
+            </div>
+            <strong style="color:var(--danger)">- ${formatMoney(o.amount)}</strong>
+          </div>
+        `).join('');
+      }
+
+    } catch (err) {
+      console.error(err);
+      Toast.error('خطأ أثناء تحميل بيانات الصندوق');
+    }
+  }
+
+  function loadOfflineQueueInfo() {
+    try {
+      const queue = JSON.parse(localStorage.getItem('offline_request_queue')) || [];
+      const badge = document.getElementById('pending-actions-count');
+      const exportArea = document.getElementById('export-actions-area');
+      const payloadArea = document.getElementById('exported-payload');
+
+      if (queue.length > 0) {
+        badge.className = 'badge badge-warning';
+        badge.textContent = `⚠️ يوجد ${queue.length} عملية معلقة للرفع`;
+        
+        const payload = API.exportOfflineQueue();
+        payloadArea.value = payload;
+        exportArea.style.display = 'block';
+      } else {
+        badge.className = 'badge badge-success';
+        badge.textContent = '✅ لا توجد عمليات معلقة حالياً';
+        exportArea.style.display = 'none';
+        payloadArea.value = '';
+      }
+    } catch (_) {
+      document.getElementById('pending-actions-count').textContent = 'خطأ في قراءة العمليات المعلقة';
+    }
+  }
+
+  function copySyncCode() {
+    const payloadArea = document.getElementById('exported-payload');
+    if (!payloadArea.value) return;
+    
+    payloadArea.select();
+    payloadArea.setSelectionRange(0, 99999);
+    
+    try {
+      navigator.clipboard.writeText(payloadArea.value);
+      Toast.success('تم نسخ رمز المزامنة إلى الحافظة! يمكنك مشاركته ولصقه في الجهاز الآخر ✅');
+    } catch (err) {
+      document.execCommand('copy');
+      Toast.success('تم نسخ رمز المزامنة! ✅');
+    }
+  }
+
+  function downloadSyncFile() {
+    const payload = document.getElementById('exported-payload').value;
+    if (!payload) return;
+
+    const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `offline_sync_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    Toast.success('تم تحميل ملف المزامنة بنجاح ✅');
+  }
+
+  function loadSyncFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('import-payload-input').value = e.target.result;
+      Toast.success('تم تحميل ملف المزامنة بنجاح! يرجى الضغط على زر دمج العمليات ✅');
+    };
+    reader.readAsText(file);
+  }
+
+  function executeImport() {
+    const payload = document.getElementById('import-payload-input').value.trim();
+    if (!payload) {
+      Toast.warning('يرجى لصق الرمز المشفر أو رفع ملف المزامنة أولاً');
+      return;
+    }
+
+    const res = API.importOfflineQueue(payload);
+    if (res.success) {
+      if (res.count > 0) {
+        Toast.success(`تم دمج واستيراد ${res.count} عملية معلقة بنجاح! سيتم إرسالها للسيرفر فور الاتصال 🎉`);
+      } else {
+        Toast.info(res.message || 'لا توجد عمليات جديدة لدمجها');
+      }
+      document.getElementById('import-payload-input').value = '';
+      loadOfflineQueueInfo();
+    } else {
+      Toast.error(res.message || 'فشل فك الرمز واستيراد العمليات');
+    }
+  }
+
+  // ── Collectors management functions ──
+  let collectorsList = [];
+
+  async function loadCollectors() {
+    const res = await API.get('/distributors/collectors');
+    if (!res?.success) { Toast.error('فشل تحميل الجباة'); return; }
+    collectorsList = res.data;
+
+    const tbody = document.getElementById('collectors-tbody');
+    if (!collectorsList.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">لا يوجد جباة مضافين بعد. اضغط "إضافة جابي جديد" للبدء.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = collectorsList.map(c => `
+      <tr>
+        <td><strong>${c.full_name}</strong></td>
+        <td>@${c.username}</td>
+        <td>📍 ${c.allowed_neighborhoods || 'كل الأحياء'}</td>
+        <td>
+          <span class="badge ${c.is_active ? 'badge-success' : 'badge-danger'}">
+            ${c.is_active ? 'نشط' : 'معطّل'}
+          </span>
+        </td>
+        <td>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="editCollector(${c.id})">✏️ تعديل</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCollector(${c.id})">🗑️ حذف</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  let allNeighborhoods = [];
+
+  async function fetchNeighborhoods() {
+    const res = await API.get('/customers/neighborhoods');
+    if (res?.success) {
+      allNeighborhoods = res.data;
+    }
+  }
+
+  function renderNeighborhoodsChecklist(allowedString = '') {
+    const allowed = allowedString ? allowedString.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const list = Array.from(new Set([...allNeighborhoods, ...allowed])).filter(Boolean);
+    const container = document.getElementById('col-neighborhoods-list');
+    if (!list.length) {
+      container.innerHTML = `<p style="font-size:0.75rem; color:var(--text-muted); margin:0; text-align:center; padding:10px;">لا توجد أحياء مسجلة بالنظام بعد. أضف حياً جديداً في الأسفل.</p>`;
+      return;
+    }
+    container.innerHTML = list.map(nh => {
+      const checked = allowed.includes(nh) ? 'checked' : '';
+      return `
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:var(--text-primary); margin:0;">
+          <input type="checkbox" class="col-nh-checkbox" value="${nh}" ${checked} />
+          <span>${nh}</span>
+        </label>
+      `;
+    }).join('');
+  }
+
+  function addNewNeighborhoodToColList() {
+    const input = document.getElementById('col-new-neighborhood');
+    const value = input.value.trim();
+    if (!value) return;
+    if (!allNeighborhoods.includes(value)) {
+      allNeighborhoods.push(value);
+    }
+    const checked = getSelectedNeighborhoodsList();
+    if (!checked.includes(value)) {
+      checked.push(value);
+    }
+    renderNeighborhoodsChecklist(checked.join(','));
+    input.value = '';
+  }
+
+  function getSelectedNeighborhoodsList() {
+    const checkboxes = document.querySelectorAll('.col-nh-checkbox');
+    const checked = [];
+    checkboxes.forEach(cb => {
+      if (cb.checked) checked.push(cb.value.trim());
+    });
+    return checked;
+  }
+
+  async function openAddColModal() {
+    await fetchNeighborhoods();
+    renderNeighborhoodsChecklist('');
+    document.getElementById('col-modal-title').textContent = '➕ إضافة جابي جديد';
+    document.getElementById('col-id').value = '';
+    document.getElementById('col-fullname').value = '';
+    document.getElementById('col-username').value = '';
+    document.getElementById('col-username').disabled = false;
+    document.getElementById('col-password').value = '';
+    document.getElementById('col-new-neighborhood').value = '';
+    document.getElementById('col-active').value = '1';
+    document.getElementById('col-pass-label').textContent = 'كلمة المرور * (8 أحرف على الأقل)';
+    document.getElementById('col-active-field').style.display = 'none';
+    Modal.show('col-modal');
+  }
+
+  async function editCollector(id) {
+    const col = collectorsList.find(c => c.id === id);
+    if (!col) return;
+
+    await fetchNeighborhoods();
+    renderNeighborhoodsChecklist(col.allowed_neighborhoods || '');
+
+    document.getElementById('col-modal-title').textContent = '✏️ تعديل حساب الجابي';
+    document.getElementById('col-id').value = col.id;
+    document.getElementById('col-fullname').value = col.full_name;
+    document.getElementById('col-username').value = col.username;
+    document.getElementById('col-username').disabled = true;
+    document.getElementById('col-password').value = '';
+    document.getElementById('col-new-neighborhood').value = '';
+    document.getElementById('col-active').value = col.is_active ? '1' : '0';
+    document.getElementById('col-pass-label').textContent = 'كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)';
+    document.getElementById('col-active-field').style.display = 'block';
+    Modal.show('col-modal');
+  }
+
+  async function saveCollector() {
+    const id = document.getElementById('col-id').value;
+    const fullName = document.getElementById('col-fullname').value.trim();
+    const username = document.getElementById('col-username').value.trim();
+    const password = document.getElementById('col-password').value;
+    const allowedNeighborhoods = getSelectedNeighborhoodsList().join(', ');
+
+    if (!fullName) { Toast.warning('الاسم الكامل مطلوب'); return; }
+    if (!allowedNeighborhoods) { Toast.warning('الرجاء تحديد حي واحد على الأقل للمشتركين'); return; }
+
+    if (!id) {
+      if (!username || username.length < 3) { Toast.warning('اسم المستخدم يجب 3 أحرف على الأقل'); return; }
+      if (!password || password.length < 8) { Toast.warning('كلمة المرور يجب 8 أحرف على الأقل'); return; }
+
+      const res = await API.post('/distributors/collectors', {
+        username, fullName, password, allowedNeighborhoods
+      });
+      if (res?.success) {
+        Toast.success('تم إضافة الجابي بنجاح ✅');
+        Modal.hide('col-modal');
+        await loadCollectors();
+      } else {
+        Toast.error(res?.message || 'فشل إضافة الجابي');
+      }
+    } else {
+      const body = {
+        fullName, allowedNeighborhoods,
+        isActive: parseInt(document.getElementById('col-active').value)
+      };
+      if (password) {
+        if (password.length < 8) { Toast.warning('كلمة المرور يجب 8 أحرف على الأقل'); return; }
+        body.password = password;
+      }
+
+      const res = await API.put(`/distributors/collectors/${id}`, body);
+      if (res?.success) {
+        Toast.success('تم التحديث بنجاح');
+        Modal.hide('col-modal');
+        await loadCollectors();
+      } else {
+        Toast.error(res?.message || 'فشل التحديث');
+      }
+    }
+  }
+
+  async function deleteCollector(id) {
+    Modal.confirm('هل أنت متأكد من حذف حساب هذا الجابي نهائياً؟', async () => {
+      const res = await API.delete(`/distributors/collectors/${id}`);
+      if (res?.success) {
+        Toast.success('تم حذف الجابي بنجاح 🗑️');
+        await loadCollectors();
+      } else {
+        Toast.error(res?.message || 'فشل الحذف');
+      }
+    });
+  }
+
+  let currentCashboxData = null;
+
+  function sendCashboxReportWhatsapp() {
+    if (!currentCashboxData) return;
+    const user = API.getCurrentUser();
+    const dateFormatted = currentCashboxData.date;
+    const collected = currentCashboxData.totalCollected;
+    const payments = currentCashboxData.totalPayments;
+    const extras = currentCashboxData.totalExtras;
+    const paid = currentCashboxData.totalObligations;
+    const net = currentCashboxData.netCash;
+    const parentPhone = currentCashboxData.distributorPhone;
+
+    let message = `*تقرير الصندوق اليومي للجابي*\n\n`;
+    message += `*الجابي:* ${user.fullName || user.username}\n`;
+    message += `*التاريخ:* ${dateFormatted}\n\n`;
+    message += `*المقبوضات (الاشتراكات):* ${payments.toFixed(2)} $\n`;
+    message += `*المستحقات الإضافية:* ${extras.toFixed(2)} $\n`;
+    message += `*إجمالي المقبوضات:* ${collected.toFixed(2)} $\n`;
+    message += `*المصاريف المدفوعة:* ${paid.toFixed(2)} $\n\n`;
+    message += `*الصافي الفعلي للتسليم:* ${net.toFixed(2)} $`;
+
+    if (!parentPhone) {
+      Toast.warning('رقم هاتف المدير غير متوفر لإرسال التقرير');
+      return;
+    }
+
+    const encoded = encodeURIComponent(message);
+    const cleanPhone = parentPhone.replace(/\D/g, ''); // Clean non-digits
+    
+    if (!cleanPhone) {
+      Toast.warning('رقم هاتف المدير غير صالح لإرسال التقرير');
+      return;
+    }
+
+    // Open WhatsApp
+    const url = `https://wa.me/${cleanPhone}?text=${encoded}`;
+    window.open(url, '_blank');
+  }
+
+  // ── PWA Installation Logic ──
+  let deferredPrompt;
+  const btnInstall = document.getElementById('btn-pwa-install-trigger');
+  const cardInstalled = document.getElementById('pwa-installed-msg');
+  const cardAndroid = document.getElementById('pwa-install-android');
+  const cardIos = document.getElementById('pwa-install-ios');
+  const cardUnsupported = document.getElementById('pwa-install-unsupported');
+
+  function initPwaInstallUI() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (isStandalone) {
+      if (cardInstalled) cardInstalled.style.display = 'block';
+      if (cardAndroid) cardAndroid.style.display = 'none';
+      if (cardIos) cardIos.style.display = 'none';
+      if (cardUnsupported) cardUnsupported.style.display = 'none';
+    } else if (isIOS) {
+      if (cardInstalled) cardInstalled.style.display = 'none';
+      if (cardAndroid) cardAndroid.style.display = 'none';
+      if (cardIos) cardIos.style.display = 'block';
+      if (cardUnsupported) cardUnsupported.style.display = 'none';
+    } else {
+      if (window.deferredPrompt) {
+        deferredPrompt = window.deferredPrompt;
+        if (cardInstalled) cardInstalled.style.display = 'none';
+        if (cardAndroid) cardAndroid.style.display = 'block';
+        if (cardIos) cardIos.style.display = 'none';
+        if (cardUnsupported) cardUnsupported.style.display = 'none';
+      } else {
+        if (cardInstalled) cardInstalled.style.display = 'none';
+        if (cardAndroid) cardAndroid.style.display = 'none';
+        if (cardIos) cardIos.style.display = 'none';
+        if (cardUnsupported) cardUnsupported.style.display = 'block';
+      }
+    }
+  }
+
+  // Listen to the custom event from ui.js
+  window.addEventListener('pwa-installable', () => {
+    initPwaInstallUI();
+  });
+
+  btnInstall?.addEventListener('click', async () => {
+    const promptEvent = window.deferredPrompt || deferredPrompt;
+    if (!promptEvent) return;
+    promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    window.deferredPrompt = null;
+    deferredPrompt = null;
+    initPwaInstallUI();
+  });
+
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA was installed');
+    initPwaInstallUI();
+  });
+
+  // Call on load
+  document.addEventListener('DOMContentLoaded', () => {
+    initPwaInstallUI();
+    // Re-check after a brief timeout to allow beforeinstallprompt to register
+    setTimeout(initPwaInstallUI, 1000);
+  });
+</script>
+
+<!-- Collector Modal -->
+<div class="modal-overlay" id="col-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="col-modal-title">➕ إضافة جابي جديد</h3>
+      <button class="modal-close" onclick="Modal.hide('col-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="col-id" />
+      
+      <div class="form-group">
+        <label class="form-label">الاسم الكامل *</label>
+        <input type="text" id="col-fullname" class="form-control" placeholder="مثال: أحمد العلي" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">اسم المستخدم * (لتسجيل الدخول)</label>
+        <input type="text" id="col-username" class="form-control" placeholder="مثال: ahmed_col" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="col-pass-label">كلمة المرور * (8 أحرف على الأقل)</label>
+        <input type="password" id="col-password" class="form-control" placeholder="كلمة مرور الجابي" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">📍 الأحياء المصرح بها للجابي *</label>
+        <div id="col-neighborhoods-list" style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+          <!-- Checkboxes will be rendered here dynamically -->
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="col-new-neighborhood" class="form-control" style="font-size: 0.85rem;" placeholder="إضافة حي جديد غير موجود بالقائمة..." />
+          <button class="btn btn-secondary btn-sm" type="button" onclick="addNewNeighborhoodToColList()">➕ إضافة</button>
+        </div>
+        <small style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block;">سيتمكن الجابي من رؤية المشتركين وجباية فواتير الأحياء المحددة فقط.</small>
+      </div>
+      <div class="form-group" id="col-active-field" style="display:none">
+        <label class="form-label">الحالة</label>
+        <select id="col-active" class="form-control">
+          <option value="1">نشط</option>
+          <option value="0">معطّل</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('col-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveCollector()">💾 حفظ الجابي</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

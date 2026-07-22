@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script src="js/api.js"></script>
+  <script>
+    if (API.isLoggedIn()) {
+      const user = API.getCurrentUser();
+      if (user?.role === 'superadmin') {
+        window.location.href = 'users.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }
+  </script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول — ISP Billing System</title>
+  <link rel="stylesheet" href="css/app.css?v=112" />
+  <link rel="icon" href="img/logo.png" type="image/png" />
+  <style>
+    .login-page {
+      background: radial-gradient(circle at 50% 50%, #0c1b33 0%, #040812 100%) !important;
+    }
+    .floating-shapes { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: float 10s ease-in-out infinite;
+    }
+    .shape:nth-child(1) {
+      width: 350px;
+      height: 350px;
+      top: -100px;
+      left: -100px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+      animation-delay: 0s;
+    }
+    .shape:nth-child(2) {
+      width: 300px;
+      height: 300px;
+      bottom: -80px;
+      right: -60px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+      animation-delay: 3s;
+    }
+    .shape:nth-child(3) {
+      width: 250px;
+      height: 250px;
+      top: 40%;
+      right: 25%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+      animation-delay: 5s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%       { transform: translateY(-30px) scale(1.05); }
+    }
+    .error-msg {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: #f87171;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .login-card {
+      background: rgba(13, 27, 54, 0.65) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    }
+    .logo-img {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      display: block;
+      box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+      border: 2px solid rgba(16, 185, 129, 0.4);
+      background: rgba(13, 21, 38, 0.8);
+      object-fit: cover;
+      transform: scale(1.08);
+    }
+    .login-logo h1 {
+      background: linear-gradient(135deg, #fbbf24 0%, #10b981 50%, #06b6d4 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+      font-weight: 800;
+    }
+    .login-logo p {
+      color: #8899b5 !important;
+    }
+    .form-control:focus {
+      border-color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.04) !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #0284c7 100%) !important;
+      border: none !important;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3) !important;
+      transition: all 0.3s ease !important;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #059669 0%, #0369a1 100%) !important;
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45) !important;
+      transform: translateY(-1px) !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-shapes">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+  </div>
+
+  <div class="login-page" style="position:relative;z-index:1">
+    <div class="login-card">
+      <div class="login-logo">
+        <img class="logo-img" src="img/logo.png" alt="Logo" />
+        <h1>ISP Billing</h1>
+        <p>نظام إدارة موزعي الإنترنت</p>
+      </div>
+
+      <div id="error-msg" class="error-msg"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="username">اسم المستخدم</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="form-control"
+            placeholder="أدخل اسم المستخدم"
+            autocomplete="username"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">كلمة المرور</label>
+          <div style="position:relative">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-control"
+              placeholder="أدخل كلمة المرور"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              id="toggle-pass"
+              style="position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem"
+            >👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn">
+          <span id="login-text">تسجيل الدخول</span>
+          <span id="login-spinner" style="display:none">⏳</span>
+        </button>
+      </form>
+
+      <p style="text-align:center;margin-top:24px;font-size:0.8rem;color:var(--text-muted)">
+        &copy; 2024 ISP Billing System — جميع الحقوق محفوظة
+      </p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('toggle-pass').addEventListener('click', () => {
+      const inp = document.getElementById('password');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const errEl = document.getElementById('error-msg');
+      errEl.style.display = 'none';
+
+      btn.disabled = true;
+      document.getElementById('login-text').style.display = 'none';
+      document.getElementById('login-spinner').style.display = 'inline';
+
+      try {
+        const data = await API.post('/auth/login', {
+          username: document.getElementById('username').value.trim(),
+          password: document.getElementById('password').value,
+        });
+
+        if (data?.success) {
+          if (data.data.user.role === 'superadmin') {
+            errEl.textContent = 'هذا الحساب مخصص للوحة الإدارة فقط';
+            errEl.style.display = 'block';
+            return;
+          }
+          API.saveTokens(data.data.accessToken, data.data.refreshToken);
+          API.setCurrentUser(data.data.user);
+          
+          document.getElementById('login-text').textContent = 'جاري تهيئة البيانات للعمل دون اتصال...';
+          document.getElementById('login-text').style.display = 'inline';
+          document.getElementById('login-spinner').style.display = 'inline';
+          
+          API.precacheAllData().catch(() => {}).finally(() => {
+            window.location.href = 'dashboard.html';
+          });
+        } else {
+          errEl.textContent = data?.message || 'فشل تسجيل الدخول';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'خطأ في الاتصال بالخادم';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        document.getElementById('login-text').style.display = 'inline';
+        document.getElementById('login-spinner').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

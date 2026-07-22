@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/app.css?v=112" />
+  <link rel="icon" href="img/logo.png" type="image/png" />
+</head>
+<body>
+<div id="toast-container" class="toast-container"></div>
+
+  <!-- Sidebar -->
+  <nav class="app-sidebar" id="app-sidebar">
+    <div class="app-sidebar-logo">
+      <img class="logo-img" src="img/logo.png" alt="Logo" />
+      <h2>ISP Billing</h2>
+      <p>نظام موزعي الإنترنت</p>
+    </div>
+    <div class="app-sidebar-nav">
+      <div class="nav-section-title">الرئيسية</div>
+      <a href="dashboard.html"    class="nav-item"><span class="nav-icon">🏠</span> لوحة التحكم</a>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">👥</span> الزبائن</a>
+      <a href="obligations.html"  class="nav-item"><span class="nav-icon">📦</span> المستحقات</a>
+      <a href="settings.html"     class="nav-item"><span class="nav-icon">⚙️</span> الإعدادات</a>
+    </div>
+  </nav>
+
+  <!-- Floating Capsule Bottom Navigation for Mobile -->
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">🏠</span>
+      <span class="bottom-nav-label">الرئيسية</span>
+    </a>
+    <a href="customers.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">👥</span>
+      <span class="bottom-nav-label">الزبائن</span>
+    </a>
+    <a href="obligations.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">📦</span>
+      <span class="bottom-nav-label">المستحقات</span>
+    </a>
+    <a href="settings.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">الإعدادات</span>
+    </a>
+  </nav>
+
+<!-- Add/Edit Customer Modal -->
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">➕ إضافة زبون</h3>
+      <button class="modal-close" onclick="Modal.hide('customer-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="customer-form">
+        <input type="hidden" id="customer-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">الاسم الأول *</label>
+            <input type="text" id="c-fullname" class="form-control" placeholder="مثال: محمد" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">اسم العائلة</label>
+            <input type="text" id="c-familyname" class="form-control" placeholder="مثال: الأحمد" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">الحي / المنطقة</label>
+            <input type="text" id="c-neighborhood" class="form-control" placeholder="مثال: الميدان" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم الهاتف</label>
+            <input type="tel" id="c-phone" class="form-control" placeholder="مثال: 0911234567" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">المبلغ الشهري ($) *</label>
+            <input type="number" id="c-amount" class="form-control" placeholder="15" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ الاشتراك *</label>
+            <input type="date" id="c-date" class="form-control" required />
+          </div>
+        </div>
+        <div class="form-group" id="distributor-field" style="display:none">
+          <label class="form-label">الموزع</label>
+          <select id="c-distributor" class="form-control">
+            <option value="">اختر موزع</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('customer-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="detail-name">تفاصيل الزبون</h3>
+      <button class="modal-close" onclick="Modal.hide('detail-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="detail-body" style="max-height:70vh;overflow-y:auto">
+      <div class="empty-state"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 class="modal-title">💰 تسجيل دفعة</h3>
+      <button class="modal-close" onclick="Modal.hide('pay-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pay-customer-id" />
+      <input type="hidden" id="pay-customer-phone" />
+      <input type="hidden" id="pay-customer-debt" />
+      <div class="form-group">
+        <label class="form-label">اسم الزبون</label>
+        <div id="pay-customer-name" class="form-control" style="background:rgba(255,255,255,0.03)"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المبلغ المستحق</label>
+        <div id="pay-debt-amount" class="form-control" style="background:rgba(239,68,68,0.05);color:var(--danger);font-weight:700"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المبلغ المدفوع ($) *</label>
+        <input type="number" id="pay-amount" class="form-control" placeholder="أدخل المبلغ" min="0.01" step="0.01" />
+        <button type="button" class="btn btn-secondary btn-sm" onclick="setPayHalf()" style="margin-top: 6px; padding: 4px 10px; font-size: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border);">🏷️ نصف المبلغ</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">تاريخ الدفع *</label>
+        <input type="date" id="pay-date" class="form-control" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">ملاحظات</label>
+        <input type="text" id="pay-notes" class="form-control" placeholder="اختياري" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('pay-modal')">إلغاء</button>
+      <button class="btn btn-success" onclick="recordPayment()">✅ تسجيل الدفع</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add Extra Modal -->
+<div class="modal-overlay" id="quick-extra-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 class="modal-title">📦 إضافة مستحق إضافي للزبون</h3>
+      <button class="modal-close" onclick="Modal.hide('quick-extra-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="quick-extra-customer-id" />
+      <div class="form-group">
+        <label class="form-label">الزبون</label>
+        <div id="quick-extra-customer-name" class="form-control" style="background:rgba(255,255,255,0.03)"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الوصف *</label>
+        <input type="text" id="quick-extra-desc" class="form-control" placeholder="مثال: راوتر، كبل، صيانة..." list="quick-extra-suggestions" />
+        <datalist id="quick-extra-suggestions">
+          <option value="راوتر">
+          <option value="كبل شبكة">
+          <option value="مكنة إنترنت">
+          <option value="صيانة">
+          <option value="تمديدات خارجية">
+        </datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المبلغ ($) *</label>
+        <input type="number" id="quick-extra-amount" class="form-control" placeholder="0.00" min="0.01" step="0.01" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('quick-extra-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveQuickExtra()">💾 حفظ المستحق</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-shell">
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="topbar-title">
+          <h1>لوحة التحكم</h1>
+          <p id="topbar-subtitle">الإحصائيات والتقارير المالية للشبكة</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" onclick="openAddModal()">
+            ➕ إضافة زبون
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card" style="--stat-color:#4f8ef7; cursor:pointer;" onclick="window.location.href='customers.html'">
+          <div class="stat-icon">👥</div>
+          <div class="stat-value" id="stat-total-amount">—</div>
+          <div class="stat-label">إجمالي قيمة الاشتراكات</div>
+          <div class="stat-sub" id="stat-total-count">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#22c55e; cursor:pointer;" onclick="window.location.href='/customers.html?status=paid'">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="stat-paid-amount">—</div>
+          <div class="stat-label">المبالغ المدفوعة هذا الشهر</div>
+          <div class="stat-sub" id="stat-paid-count">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#eab308; cursor:pointer;" onclick="window.location.href='/customers.html?status=unpaid'">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value" id="stat-unpaid-amount">—</div>
+          <div class="stat-label">المبالغ المتبقية (لم يدفعوا)</div>
+          <div class="stat-sub" id="stat-unpaid-count">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#10b981; cursor:pointer;" onclick="window.location.href='customers.html'">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="stat-net-amount">—</div>
+          <div class="stat-label">الصافي بعد الخصم</div>
+          <div class="stat-sub">الاشتراكات - المصاريف</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#a855f7; cursor:pointer;" onclick="window.location.href='/customers.html?status=unpaid'">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value" id="stat-extras-amount">—</div>
+          <div class="stat-label">المستحقات الإضافية</div>
+          <div class="stat-sub">إجمالي الديون الأخرى</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#ef4444; cursor:pointer;" onclick="window.location.href='/customers.html?status=suspended'">
+          <div class="stat-icon">⏸️</div>
+          <div class="stat-value" id="stat-suspended-count">—</div>
+          <div class="stat-label">الزبائن الموقّفون مؤقتاً</div>
+          <div class="stat-sub" id="stat-suspended-value">—</div>
+        </div>
+      </div>
+
+
+      <!-- Customer Subscriptions & Debts -->
+      <div class="card">
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
+          <h3 class="card-title">👥 حالة اشتراكات وديون الزبائن</h3>
+          <div style="display:flex; gap:12px; align-items:center; margin: 0 auto 0 0; width:100%; max-width:500px; flex-wrap:wrap;">
+            <div class="search-box" style="flex:1; min-width:200px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="dashboard-search-input" class="form-control" placeholder="بحث باسم الزبون أو رقم الهاتف..." />
+            </div>
+            <select id="dashboard-neighborhood-filter" class="form-control" style="width:160px;">
+              <option value="">كل الأحياء</option>
+            </select>
+          </div>
+          <a href="customers.html" class="btn btn-ghost btn-sm">عرض الكل ←</a>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>الزبون</th>
+                  <th>الهاتف</th>
+                  <th>المبلغ الشهري</th>
+                  <th>حالة الاشتراك</th>
+                  <th>الدين الكلي</th>
+                  <th>إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="debtors-tbody">
+                <tr><td colspan="6" class="text-center text-muted" style="padding:40px">⏳ جارٍ التحميل...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script>
+let currentUser = null;
+const urlParams = new URLSearchParams(window.location.search);
+const distributorId = urlParams.get('distributorId') ? parseInt(urlParams.get('distributorId')) : null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  currentUser = API.getCurrentUser();
+  if (currentUser?.role === 'superadmin') {
+    document.getElementById('distributor-field').style.display = 'block';
+    await loadDistributors();
+    if (distributorId) {
+      const sel = document.getElementById('c-distributor');
+      if (sel) sel.value = distributorId;
+    }
+  }
+  document.getElementById('c-date').value = new Date().toISOString().split('T')[0];
+
+  if (distributorId && currentUser?.role === 'superadmin') {
+    const resDist = await API.get('/distributors');
+    if (resDist?.success) {
+      const dist = resDist.data.find(d => d.id === distributorId);
+      if (dist) {
+        document.querySelector('.topbar-title h1').textContent = `لوحة تحكم الجابي: ${dist.full_name}`;
+        const subtitle = document.getElementById('topbar-subtitle');
+        if (subtitle) {
+          subtitle.textContent = `مستعرض لحساب الموزع: ${dist.company_name || 'بدون شركة'}`;
+        }
+      }
+    }
+  }
+
+  await loadStats();
+  await loadDebtors();
+});
+
+async function loadDistributors() {
+  const res = await API.get('/distributors');
+  if (!res?.success) return;
+  const sel = document.getElementById('c-distributor');
+  res.data.forEach((d) => {
+    sel.innerHTML += `<option value="${d.id}">${d.full_name} — ${d.company_name || ''}</option>`;
+  });
+}
+
+async function loadStats() {
+  const res = await API.get('/reports/summary' + (distributorId ? `?distributorId=${distributorId}` : ''));
+  if (!res?.success) return;
+  const d = res.data;
+
+  // Paid stats
+  document.getElementById('stat-paid-amount').textContent = formatMoney(d.thisMonth.total_collected);
+  document.getElementById('stat-paid-count').textContent  = `${d.thisMonth.paid_count || 0} دفعوا`;
+
+  // Unpaid stats
+  document.getElementById('stat-unpaid-amount').textContent = formatMoney(d.thisMonth.total_outstanding);
+  document.getElementById('stat-unpaid-count').textContent  = `${d.thisMonth.unpaid_count || 0} لم يدفعوا`;
+
+  // Total stats
+  document.getElementById('stat-total-amount').textContent = formatMoney(d.thisMonth.total_billed);
+  const totalCount = (d.thisMonth.paid_count || 0) + (d.thisMonth.unpaid_count || 0);
+  document.getElementById('stat-total-count').textContent  = `إجمالي ${totalCount} نشط`;
+
+  // Suspended stats
+  document.getElementById('stat-suspended-count').textContent = d.suspendedCount || 0;
+  document.getElementById('stat-suspended-value').textContent  = `قيمة باقاتهم: ${formatMoney(d.suspendedValue || 0)}`;
+
+  // Extras stats
+  document.getElementById('stat-extras-amount').textContent = formatMoney(d.unpaidExtras || 0);
+
+  // Net after discount (Subscriptions - Obligations)
+  const netAmount = (d.thisMonth.total_billed || 0) - (d.unpaidObligations || 0);
+  document.getElementById('stat-net-amount').textContent = formatMoney(netAmount);
+
+  checkAllPaidStatus(totalCount > 0 && (d.thisMonth.unpaid_count || 0) === 0);
+}
+
+let allDebtors = [];
+
+async function loadDebtors() {
+  const res = await API.get('/reports/top-debtors' + (distributorId ? `?distributorId=${distributorId}` : ''));
+  if (!res?.success) return;
+  allDebtors = res.data;
+  populateDashboardNeighborhoodFilter(allDebtors);
+  filterDashboardDebtors();
+}
+
+function populateDashboardNeighborhoodFilter(debtors) {
+  const filterEl = document.getElementById('dashboard-neighborhood-filter');
+  if (!filterEl) return;
+  const prevVal = filterEl.value;
+  const neighborhoods = [...new Set(debtors
+    .map(c => c.neighborhood ? c.neighborhood.trim() : '')
+    .filter(n => n !== '')
+  )].sort();
+  filterEl.innerHTML = '<option value="">كل الأحياء</option>';
+  neighborhoods.forEach(n => {
+    filterEl.innerHTML += `<option value="${n}">${n}</option>`;
+  });
+  if (prevVal && neighborhoods.includes(prevVal)) {
+    filterEl.value = prevVal;
+  } else {
+    filterEl.value = "";
+  }
+}
+
+function renderDebtors(data) {
+  const tbody = document.getElementById('debtors-tbody');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔍</div><h3>لا توجد نتائج مطابقة للبحث</h3></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((c) => {
+    const isSuspended = c.status === 'suspended';
+    let statusBadge = '';
+    
+    if (isSuspended) {
+      statusBadge = '<span class="badge" style="background:rgba(239, 68, 68, 0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.25)">⏸️ موقّف مؤقتاً</span>';
+    } else if (c.group === 1) {
+      statusBadge = `<span class="badge badge-danger">⚠️ انتهى الاشتراك (${c.dueDay} بالشهر)</span>`;
+    } else if (c.group === 2) {
+      if (c.past_bill_debt > 0) {
+        statusBadge = '<span class="badge badge-warning">💸 متراكم عليه دفعات</span>';
+      } else {
+        statusBadge = '<span class="badge" style="background:rgba(168,85,247,0.1); color:#a855f7; border:1px solid rgba(168,85,247,0.2)">📦 مستحقات إضافية</span>';
+      }
+    } else if (c.group === 3) {
+      statusBadge = '<span class="badge badge-success">✅ مدفوع</span>';
+    } else if (c.group === 4) {
+      if (c.is_new_this_month) {
+        statusBadge = '<span class="badge badge-info">🆕 مشترك جديد</span>';
+      } else {
+        statusBadge = `<span class="badge badge-info">⏳ لم يحن بعد (${c.dueDay} بالشهر)</span>`;
+      }
+    }
+
+    const debtBadgeClass = c.total_debt > 0 ? 'badge-danger' : 'badge-success';
+    const rowStyle = isSuspended ? 'style="opacity:0.65; background:rgba(239,68,68,0.02);"' : '';
+
+    return `
+      <tr ${rowStyle}>
+        <td>
+          <strong>${c.full_name} ${c.family_name || ''}</strong>
+          ${c.neighborhood ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">📍 ${c.neighborhood}</div>` : ''}
+        </td>
+        <td class="text-muted">${c.phone || '—'}</td>
+        <td>${formatMoney(c.monthly_amount)}</td>
+        <td>${statusBadge}</td>
+        <td><span class="badge ${debtBadgeClass}">${formatMoney(c.total_debt)}</span></td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="viewDetails(${c.id})">عرض</button>
+          ${c.total_debt > 0 ? `<button class="btn btn-success btn-sm" onclick="sendDirectReminder('${c.full_name}', '${c.phone || ''}', ${c.total_debt}, ${c.monthly_amount}, ${c.obligation_debt})">💬</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function normalizeArabic(text) {
+  if (!text) return '';
+  return String(text)
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .trim();
+}
+
+function filterDashboardDebtors() {
+  const query = normalizeArabic(document.getElementById('dashboard-search-input')?.value);
+  const neighborhood = document.getElementById('dashboard-neighborhood-filter')?.value || '';
+  const filtered = allDebtors.filter((c) => {
+    const fullName = normalizeArabic(`${c.full_name || ''} ${c.family_name || ''}`);
+    const phone = (c.phone || '').toLowerCase();
+    const matchSearch = !query || fullName.startsWith(query) || phone.startsWith(query);
+    const matchNeighborhood = !neighborhood || (c.neighborhood ? c.neighborhood.trim() === neighborhood : false);
+    return matchSearch && matchNeighborhood;
+  });
+  renderDebtors(filtered);
+}
+
+// Bind search and neighborhood change events
+document.getElementById('dashboard-search-input')?.addEventListener('input', filterDashboardDebtors);
+document.getElementById('dashboard-neighborhood-filter')?.addEventListener('change', filterDashboardDebtors);
+
+async function viewDetails(id) {
+  Modal.show('detail-modal');
+  const detailBody = document.getElementById('detail-body');
+  detailBody.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+
+  const res = await API.get(`/customers/${id}`);
+  if (!res?.success) { detailBody.innerHTML = '<p class="text-danger text-center">فشل تحميل البيانات</p>'; return; }
+
+  const c = res.data;
+  document.getElementById('detail-name').textContent = `${c.full_name} ${c.family_name || ''} ${c.neighborhood ? '📍 ' + c.neighborhood : ''}`;
+
+  const billsHtml = c.bills.slice(0, 12).map((b) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <strong>${monthName(b.month)}/${b.year}</strong>
+        <div style="font-size:0.8rem;color:var(--text-muted)">مستحق: ${formatMoney(b.amount_due)} | مدفوع: ${formatMoney(b.amount_paid)}</div>
+      </div>
+      <span class="badge ${b.status === 'paid' ? 'badge-success' : b.status === 'partial' ? 'badge-warning' : 'badge-danger'}">
+        ${b.status === 'paid' ? '✅ مدفوع' : b.status === 'partial' ? '⚡ جزئي' : '❌ غير مدفوع'}
+      </span>
+    </div>
+  `).join('');
+
+  const obligationsHtml = c.obligations
+    .filter((o) => {
+      if (o.is_paid) {
+        const paidTime = o.paid_date ? new Date(o.paid_date).getTime() : new Date(o.created_at).getTime();
+        const diffDays = (Date.now() - paidTime) / (1000 * 60 * 60 * 24);
+        if (diffDays > 30) return false;
+      }
+      return true;
+    })
+    .map((o) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <strong>${o.description}</strong>
+        <div style="font-size:0.8rem;color:var(--text-muted)">${formatMoney(o.amount)} — ${formatDate(o.created_at)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${o.is_paid
+          ? `<span class="badge badge-success">✅ مدفوع</span>
+             <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.75rem;color:var(--danger)" onclick="unpayExtra(${c.id}, ${o.id})">↩️ إلغاء</button>`
+          : `<button class="btn btn-success btn-sm" style="padding:2px 8px;font-size:0.75rem" onclick="payExtra(${c.id}, ${o.id})">✅ دفع</button>
+             <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.75rem" onclick="deleteExtra(${c.id}, ${o.id})">🗑️</button>`}
+      </div>
+    </div>
+  `).join('');
+
+  const paymentsHtml = c.payments.map((p) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <strong>${formatMoney(p.amount)}</strong>
+        <div style="font-size:0.8rem;color:var(--text-muted)">بتاريخ: ${formatDate(p.payment_date)} ${p.notes ? `| ${p.notes}` : ''}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.75rem" onclick="cancelPayment(${c.id}, ${p.id}, ${p.amount}, '${p.payment_date}')">🗑️ إلغاء</button>
+    </div>
+  `).join('');
+
+  detailBody.innerHTML = `
+    <!-- Basic Information Bar -->
+    <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:20px; padding:14px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:var(--radius-md); font-size:0.88rem; line-height:1.6;">
+      <div style="flex:1; min-width:140px;"><strong>📞 رقم الهاتف:</strong> <span class="text-secondary" style="color:var(--text-secondary)">${c.phone || '—'}</span></div>
+      <div style="flex:1; min-width:140px;"><strong>📅 تاريخ الاشتراك:</strong> <span class="text-secondary" style="color:var(--text-secondary)">${formatDate(c.subscription_date)}</span></div>
+      ${c.distributor_name ? `<div style="flex:1; min-width:140px;"><strong>👤 الموزع:</strong> <span class="text-secondary" style="color:var(--text-secondary)">${c.distributor_name}</span></div>` : ''}
+    </div>
+
+    <div style="display:grid;grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));gap:12px;margin-bottom:20px">
+      <div class="stat-card" style="padding:16px">
+        <div class="stat-label">المبلغ الشهري</div>
+        <div class="stat-value" style="font-size:1.3rem">${formatMoney(c.monthly_amount)}</div>
+      </div>
+      <div class="stat-card" style="padding:16px">
+        <div class="stat-label">دين الفواتير</div>
+        <div class="stat-value" style="font-size:1.3rem;color:var(--danger)">${formatMoney(c.debt.billDebt)}</div>
+      </div>
+      <div class="stat-card" style="padding:16px">
+        <div class="stat-label">مستحقات أخرى</div>
+        <div class="stat-value" style="font-size:1.3rem;color:var(--warning)">${formatMoney(c.debt.obligationDebt)}</div>
+      </div>
+      <div class="stat-card" style="padding:16px;background:rgba(239,68,68,0.05);border-color:rgba(239,68,68,0.15)">
+        <div class="stat-label" style="color:var(--danger);font-weight:bold">الدين الكلي المستحق</div>
+        <div class="stat-value" style="font-size:1.3rem;color:var(--danger);font-weight:800">${formatMoney(c.debt.total)}</div>
+      </div>
+    </div>
+
+    <h4 style="margin-bottom:10px; display:flex; justify-content:space-between;"><span>📋 الفواتير الشهرية</span> <span style="font-size:0.85rem; color:var(--text-secondary)">المجموع: ${formatMoney(c.debt.billDebt)}</span></h4>
+    <div style="max-height:200px;overflow-y:auto;margin-bottom:12px">${billsHtml || '<p class="text-muted">لا توجد فواتير</p>'}</div>
+
+    <h4 style="margin:20px 0 10px; display:flex; justify-content:space-between;"><span>📦 المستحقات الإضافية</span> <span style="font-size:0.85rem; color:var(--text-secondary)">المجموع: ${formatMoney(c.debt.obligationDebt)}</span></h4>
+    <div style="max-height:200px;overflow-y:auto;margin-bottom:12px">${obligationsHtml || '<p class="text-muted">لا توجد مستحقات</p>'}</div>
+
+    <h4 style="margin:20px 0 10px">💸 سجل المدفوعات الأخير</h4>
+    <div style="max-height:200px;overflow-y:auto;margin-bottom:12px">${paymentsHtml || '<p class="text-muted">لا توجد دفعات مسجلة</p>'}</div>
+
+    <div style="margin: 20px 0 12px; padding: 12px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center;">
+      <strong style="color:var(--danger)">💵 الدين الإجمالي المطلوب سداده:</strong>
+      <strong style="font-size:1.2rem; color:var(--danger)">${formatMoney(c.debt.total)}</strong>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;width:100%">
+      ${c.debt.total > 0 ? `<button class="btn btn-success" style="flex:1; min-width:110px; padding:10px 8px; font-size:0.8rem; justify-content:center;" onclick="Modal.hide('detail-modal');openPayModal(${c.id},'${c.full_name}',${c.debt.total},'${c.phone || ''}')">💰 تسجيل دفعة</button>` : ''}
+      <button class="btn btn-secondary" style="flex:1; min-width:110px; padding:10px 8px; font-size:0.8rem; justify-content:center;" onclick="Modal.hide('detail-modal');openQuickExtraModal(${c.id}, '${c.full_name}')">📦 إضافة مستحق</button>
+      ${c.debt.total > 0 ? `<button class="btn btn-ghost" style="flex:1; min-width:110px; padding:10px 8px; font-size:0.8rem; justify-content:center;" onclick="sendDirectReminder('${c.full_name}', '${c.phone || ''}', ${c.debt.total}, ${c.monthly_amount}, ${c.debt.obligationDebt})">💬 إرسال تذكير</button>` : ''}
+      ${c.status === 'suspended'
+        ? `<button class="btn" style="flex:1; min-width:110px; padding:10px 8px; font-size:0.8rem; justify-content:center; background:#22c55e !important; color:#fff !important; border:none !important;" onclick="toggleCustomerStatus(${c.id}, 'active')">▶️ تشغيل الزبون</button>`
+        : `<button class="btn" style="flex:1; min-width:110px; padding:10px 8px; font-size:0.8rem; justify-content:center; background:#ef4444 !important; color:#fff !important; border:none !important;" onclick="toggleCustomerStatus(${c.id}, 'suspended')">⏸️ إيقاف مؤقت</button>`
+      }
+    </div>
+  `;
+}
+
+async function toggleCustomerStatus(id, status) {
+  Modal.confirm(status === 'suspended' ? 'هل أنت متأكد من إيقاف مؤقت للزبون؟ سيتم حذف فاتورة هذا الشهر غير المدفوعة وإخفاء قسطه الشهري من الإحصائيات.' : 'هل أنت متأكد من إعادة تشغيل وتفعيل هذا الزبون؟', async () => {
+    const res = await API.put(`/customers/${id}`, { status });
+    if (res?.success) {
+      Toast.success(status === 'suspended' ? 'تم إيقاف مؤقت للزبون ⏸️' : 'تم إعادة تشغيل الزبون ▶️');
+      Modal.hide('detail-modal');
+      await loadStats();
+      await loadDebtors();
+    } else {
+      Toast.error(res?.message || 'فشل تغيير الحالة');
+    }
+  });
+}
+
+async function cancelPayment(customerId, paymentId, amount, date) {
+  Modal.confirm(`هل أنت متأكد من إلغاء هذه الدفعة بقيمة ${formatMoney(amount)} المسجلة بتاريخ ${formatDate(date)}؟ سيعاد احتساب الديون المتراكمة.`, async () => {
+    const res = await API.delete(`/payments/${paymentId}`);
+    if (res?.success) {
+      Toast.success('تم إلغاء الدفعة وإعادة حساب الديون بنجاح ✅');
+      await viewDetails(customerId);
+      await loadStats();
+      await loadDebtors();
+    } else {
+      Toast.error(res?.message || 'فشل إلغاء الدفعة');
+    }
+  });
+}
+
+function openPayModal(id, name, debt, phone) {
+  document.getElementById('pay-customer-id').value = id;
+  document.getElementById('pay-customer-phone').value = phone || '';
+  document.getElementById('pay-customer-debt').value = debt || 0;
+  document.getElementById('pay-customer-name').textContent = name;
+  document.getElementById('pay-debt-amount').textContent = formatMoney(debt);
+  document.getElementById('pay-amount').value = debt > 0 ? debt.toFixed(2) : '';
+  document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('pay-notes').value = '';
+  Modal.show('pay-modal');
+}
+
+async function recordPayment() {
+  const customerId = parseInt(document.getElementById('pay-customer-id').value);
+  const phone = document.getElementById('pay-customer-phone').value;
+  const originalDebt = parseFloat(document.getElementById('pay-customer-debt').value || 0);
+  const name = document.getElementById('pay-customer-name').textContent;
+  const amount = parseFloat(document.getElementById('pay-amount').value);
+  const paymentDate = document.getElementById('pay-date').value;
+
+  if (!amount || !paymentDate) { Toast.warning('يرجى تعبئة جميع الحقول'); return; }
+
+  const res = await API.post('/payments', {
+    customerId,
+    amount,
+    paymentDate,
+    notes: document.getElementById('pay-notes').value.trim() || undefined,
+  });
+
+  if (res?.success) {
+    Toast.success('تم تسجيل الدفعة بنجاح ✅');
+    Modal.hide('pay-modal');
+    await loadStats();
+    await loadDebtors();
+    if (phone) {
+      Modal.showSendReceiptModal(name, phone, amount, originalDebt);
+    }
+  } else {
+    Toast.error(res?.message || 'فشل تسجيل الدفعة');
+  }
+}
+
+function openQuickExtraModal(id, name) {
+  document.getElementById('quick-extra-customer-id').value = id;
+  document.getElementById('quick-extra-customer-name').textContent = name;
+  document.getElementById('quick-extra-desc').value = '';
+  document.getElementById('quick-extra-amount').value = '';
+  Modal.show('quick-extra-modal');
+}
+
+async function saveQuickExtra() {
+  const customerId = parseInt(document.getElementById('quick-extra-customer-id').value);
+  const description = document.getElementById('quick-extra-desc').value.trim();
+  const amount = parseFloat(document.getElementById('quick-extra-amount').value);
+
+  if (!description || !amount || amount <= 0) {
+    Toast.warning('يرجى تعبئة جميع الحقول وإدخال مبلغ صحيح');
+    return;
+  }
+
+  const res = await API.post(`/customers/${customerId}/extras`, { description, amount });
+  if (res?.success) {
+    Toast.success('تم إضافة المستحق بنجاح');
+    Modal.hide('quick-extra-modal');
+    await loadStats();
+    await loadDebtors();
+    viewDetails(customerId);
+  } else {
+    Toast.error(res?.message || 'حدث خطأ');
+  }
+}
+
+async function payExtra(customerId, extraId) {
+  const res = await API.patch(`/customers/${customerId}/extras/${extraId}/pay`, {});
+  if (res?.success) {
+    Toast.success('تم تسجيل الدفع ✅');
+    await loadStats();
+    await loadDebtors();
+    viewDetails(customerId);
+  } else {
+    Toast.error(res?.message || 'فشل تسجيل الدفع');
+  }
+}
+
+async function unpayExtra(customerId, extraId) {
+  Modal.confirm('هل تريد إلغاء دفع هذا المستحق وإعادته كدين؟', async () => {
+    const res = await API.patch(`/customers/${customerId}/extras/${extraId}/unpay`, {});
+    if (res?.success) {
+      Toast.success('تم إلغاء دفع المستحق وإعادته للدين بنجاح ✅');
+      await loadStats();
+      await loadDebtors();
+      viewDetails(customerId);
+    } else {
+      Toast.error(res?.message || 'فشل إلغاء الدفع');
+    }
+  });
+}
+
+async function deleteExtra(customerId, extraId) {
+  Modal.confirm('هل تريد حذف هذا المستحق للزبون؟', async () => {
+    const res = await API.delete(`/customers/${customerId}/extras/${extraId}`);
+    if (res?.success) {
+      Toast.success('تم حذف المستحق');
+      await loadStats();
+      await loadDebtors();
+      viewDetails(customerId);
+    } else {
+      Toast.error(res?.message || 'فشل الحذف');
+    }
+  });
+}
+
+function setPayHalf() {
+  const debt = parseFloat(document.getElementById('pay-customer-debt').value || 0);
+  if (debt > 0) {
+    document.getElementById('pay-amount').value = (debt / 2).toFixed(2);
+  }
+}
+
+function openAddModal() {
+  document.getElementById('modal-title').textContent = '➕ إضافة زبون';
+  document.getElementById('customer-form').reset();
+  document.getElementById('customer-id').value = '';
+  document.getElementById('c-date').value = new Date().toISOString().split('T')[0];
+  Modal.show('customer-modal');
+}
+
+async function saveCustomer() {
+  const id = document.getElementById('customer-id').value;
+  const body = {
+    fullName: document.getElementById('c-fullname').value.trim(),
+    familyName: document.getElementById('c-familyname').value.trim() || undefined,
+    neighborhood: document.getElementById('c-neighborhood').value.trim() || undefined,
+    phone: document.getElementById('c-phone').value.trim() || undefined,
+    monthlyAmount: parseFloat(document.getElementById('c-amount').value),
+    subscriptionDate: document.getElementById('c-date').value,
+  };
+
+  if (currentUser?.role === 'superadmin') {
+    const distId = document.getElementById('c-distributor').value;
+    if (distId) body.distributorId = parseInt(distId);
+  }
+
+  if (!body.fullName || !body.monthlyAmount || !body.subscriptionDate) {
+    Toast.warning('يرجى تعبئة الحقول المطلوبة'); return;
+  }
+
+  const res = id
+    ? await API.put(`/customers/${id}`, body)
+    : await API.post('/customers', body);
+
+  if (res?.success) {
+    Toast.success(id ? 'تم تحديث بيانات الزبون' : 'تم إضافة الزبون بنجاح');
+    Modal.hide('customer-modal');
+    await loadStats();
+    await loadDebtors();
+  } else {
+    Toast.error(res?.message || 'حدث خطأ');
+  }
+}
+</script>
+</body>
+</html>

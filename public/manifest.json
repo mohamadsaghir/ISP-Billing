@@ -1,0 +1,24 @@
+{
+  "name": "ISP Billing System",
+  "short_name": "ISP Billing",
+  "description": "نظام ذكي وشامل لموزعي وجباة شبكات الإنترنت لتتبع الحسابات والديون والتحصيل اليومي",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#040812",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "img/logo_square_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/logo_square.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

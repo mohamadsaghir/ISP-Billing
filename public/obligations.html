@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/app.css?v=112" />
+  <link rel="icon" href="img/logo.png" type="image/png" />
+</head>
+<body>
+<div id="toast-container" class="toast-container"></div>
+
+  <!-- Sidebar -->
+  <nav class="app-sidebar" id="app-sidebar">
+    <div class="app-sidebar-logo">
+      <img class="logo-img" src="img/logo.png" alt="Logo" />
+      <h2>ISP Billing</h2>
+      <p>نظام موزعي الإنترنت</p>
+    </div>
+    <div class="app-sidebar-nav">
+      <div class="nav-section-title">الرئيسية</div>
+      <a href="dashboard.html"    class="nav-item"><span class="nav-icon">🏠</span> لوحة التحكم</a>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">👥</span> الزبائن</a>
+      <a href="obligations.html"  class="nav-item"><span class="nav-icon">📦</span> المستحقات</a>
+      <a href="settings.html"     class="nav-item"><span class="nav-icon">⚙️</span> الإعدادات</a>
+    </div>
+  </nav>
+
+  <!-- Floating Capsule Bottom Navigation for Mobile -->
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">🏠</span>
+      <span class="bottom-nav-label">الرئيسية</span>
+    </a>
+    <a href="customers.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">👥</span>
+      <span class="bottom-nav-label">الزبائن</span>
+    </a>
+    <a href="obligations.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">📦</span>
+      <span class="bottom-nav-label">المستحقات</span>
+    </a>
+    <a href="settings.html" class="bottom-nav-item">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">الإعدادات</span>
+    </a>
+  </nav>
+
+<div class="app-shell">
+
+  <div class="main-content">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="topbar-toggle" id="app-sidebar-toggle">☰</button>
+        <div class="topbar-title">
+          <h1>📦 مستحقات الشبكة</h1>
+          <p>إدارة ديون ومصاريف الشبكة للشركات والموردين</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-danger btn-sm" onclick="clearAllObligations()" style="background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.2)">
+          🗑️ تفريغ كافة المستحقات
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة مستحق جديد</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Summary -->
+      <!-- Summary -->
+      <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 640px; margin-bottom: 24px">
+        <div class="stat-card" style="--stat-color: #ef4444">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value" id="stat-total-obl">—</div>
+          <div class="stat-label">إجمالي المستحقات المضافة</div>
+        </div>
+        <div class="stat-card" style="--stat-color: #22c55e">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="stat-net-amount">—</div>
+          <div class="stat-label">الصافي بعد الخصم</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-box" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="form-control" placeholder="ابحث عن وصف المستحق (الشركة / المورد / الغرض)" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th id="th-distributor">الموزع</th>
+                  <th>وصف المستحق (الشركة / المورد / الغرض)</th>
+                  <th>المبلغ</th>
+                  <th>تاريخ الاستحقاق</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="obligations-tbody">
+                <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">⏳</div><h3>جارٍ التحميل...</h3></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="obl-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="obl-modal-title">📦 إضافة مستحق للشبكة</h3>
+      <button class="modal-close" onclick="Modal.hide('obl-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="obl-id" />
+      <div class="form-group">
+        <label class="form-label">وصف المستحق *</label>
+        <input type="text" id="obl-desc" class="form-control" placeholder="مثال: شراء كابلات، فاتورة اشتراك شركة Ogero..." list="desc-suggestions" />
+        <datalist id="desc-suggestions">
+          <option value="فاتورة اشتراك الشركة الموزعة">
+          <option value="شراء كابلات شبكة">
+          <option value="شراء راوترات ومعدات">
+          <option value="صيانة سيرفرات">
+          <option value="أجور تمديدات وصيانة خارجية">
+        </datalist>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">المبلغ ($) *</label>
+          <input type="number" id="obl-amount" class="form-control" placeholder="0.00" min="0.01" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">تاريخ الاستحقاق</label>
+          <input type="date" id="obl-due" class="form-control" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('obl-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveObligation()">💾 حفظ المستحق</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script>
+let obligations = [];
+let currentUser = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  currentUser = API.getCurrentUser();
+  if (currentUser && currentUser.role !== 'superadmin') {
+    const thDist = document.getElementById('th-distributor');
+    if (thDist) thDist.style.display = 'none';
+  }
+  await loadObligations();
+  document.getElementById('search-input').addEventListener('input', renderFiltered);
+});
+
+async function loadObligations() {
+  const res = await API.get('/obligations');
+  if (!res?.success) return;
+  obligations = res.data;
+
+  // Calculate sum of all obligations
+  const totalAmount = obligations.reduce((sum, o) => sum + o.amount, 0);
+  document.getElementById('stat-total-obl').textContent = formatMoney(totalAmount);
+
+  // Fetch subscriptions summary in background to calculate Net
+  const summaryRes = await API.get('/reports/summary');
+  if (summaryRes?.success) {
+    const totalBilled = summaryRes.data.thisMonth.total_billed;
+    const netAmount = totalBilled - totalAmount;
+    document.getElementById('stat-net-amount').textContent = formatMoney(netAmount);
+  }
+
+  renderFiltered();
+}
+
+async function clearAllObligations() {
+  Modal.confirm('هل أنت متأكد من تفريغ وحذف كافة مستحقات الشبكة المسجلة نهائياً؟', async () => {
+    const res = await API.delete('/obligations/clear/all');
+    if (res?.success) {
+      Toast.success('تم تفريغ كافة المستحقات بنجاح ✅');
+      await loadObligations();
+    } else {
+      Toast.error(res?.message || 'فشل التفريغ');
+    }
+  });
+}
+
+function normalizeArabic(text) {
+  if (!text) return '';
+  return String(text)
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .trim();
+}
+
+function renderFiltered() {
+  const search = normalizeArabic(document.getElementById('search-input').value);
+  const filtered = obligations.filter((o) => {
+    if (!search) return true;
+    const desc = normalizeArabic(o.description);
+    const dist = normalizeArabic(o.distributor_name);
+    const notes = normalizeArabic(o.notes);
+    return desc.startsWith(search) || dist.startsWith(search) || notes.startsWith(search);
+  });
+
+  const tbody = document.getElementById('obligations-tbody');
+  if (!filtered.length) {
+    const colspan = currentUser && currentUser.role === 'superadmin' ? 6 : 5;
+    tbody.innerHTML = `<tr><td colspan="${colspan}"><div class="empty-state"><div class="empty-icon">📦</div><h3>لا توجد مستحقات مسجلة</h3></div></td></tr>`;
+    return;
+  }
+
+  const isSuper = currentUser && currentUser.role === 'superadmin';
+
+  tbody.innerHTML = filtered.map((o, i) => `
+    <tr>
+      <td class="text-muted" data-label="#">${i + 1}</td>
+      ${isSuper ? `<td data-label="الموزع"><strong>${o.distributor_name || '—'}</strong></td>` : ''}
+      <td>${o.description}</td>
+      <td data-label="القيمة"><strong>${formatMoney(o.amount)}</strong></td>
+      <td class="text-muted" data-label="تاريخ الاستحقاق">${formatDate(o.due_date)}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-danger btn-sm" onclick="deleteObligation(${o.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAddModal() {
+  document.getElementById('obl-id').value = '';
+  document.getElementById('obl-modal-title').textContent = '📦 إضافة مستحق للشبكة';
+  document.getElementById('obl-desc').value = '';
+  document.getElementById('obl-amount').value = '';
+  document.getElementById('obl-due').value = new Date().toISOString().split('T')[0];
+
+  Modal.show('obl-modal');
+}
+
+async function saveObligation() {
+  const description = document.getElementById('obl-desc').value.trim();
+  const amount = parseFloat(document.getElementById('obl-amount').value);
+
+  if (!description) { Toast.warning('يرجى كتابة وصف المستحق'); return; }
+  if (!amount || amount <= 0) { Toast.warning('يرجى إدخال مبلغ صحيح'); return; }
+
+  const res = await API.post('/obligations', {
+    description,
+    amount,
+    dueDate: document.getElementById('obl-due').value || undefined,
+  });
+
+  if (res?.success) {
+    Toast.success('تم إضافة المستحق بنجاح');
+    Modal.hide('obl-modal');
+    await loadObligations();
+  } else {
+    Toast.error(res?.message || 'فشل الإضافة');
+  }
+}
+
+async function markPaid(id) {
+  const res = await API.patch(`/obligations/${id}/pay`, {});
+  if (res?.success) { Toast.success('تم تسجيل الدفع ✅'); await loadObligations(); }
+  else Toast.error(res?.message || 'فشل التسجيل');
+}
+
+async function deleteObligation(id) {
+  Modal.confirm('هل تريد حذف هذا المستحق؟', async () => {
+    const res = await API.delete(`/obligations/${id}`);
+    if (res?.success) { Toast.success('تم الحذف'); await loadObligations(); }
+    else Toast.error(res?.message || 'فشل الحذف');
+  });
+}
+</script>
+</body>
+</html>

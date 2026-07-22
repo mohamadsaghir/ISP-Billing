@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>حسابات الموزعين (ISPs) — ISP Billing System</title>
+  <link rel="stylesheet" href="css/app.css?v=112" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { height: 100%; overflow-y: auto; }
+    body { overflow-x: hidden; overflow-y: auto; margin: 0; min-height: 100%; }
+
+    /* Topbar full-width */
+    .topbar {
+      position: sticky !important;
+      top: 0 !important; right: 0 !important; left: 0 !important;
+      width: 100% !important; margin: 0 !important;
+      z-index: 200;
+    }
+    .page-content { margin: 0 !important; width: 100% !important; padding: 24px !important; }
+
+    /* ── Distributor Cards Grid ── */
+    .dist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .dist-loading {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+    .dist-empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+    .dist-empty .ei { font-size: 3.5rem; margin-bottom: 12px; }
+    .dist-empty h3 { font-size: 1.2rem; color: var(--text-secondary); }
+
+    /* ── Single card ── */
+    .isp-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .isp-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-start, #6366f1), var(--accent-end, #8b5cf6));
+    }
+    .isp-card.inactive::before { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+    .isp-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+
+    /* Card header */
+    .isp-card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .isp-avatar {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .isp-card.inactive .isp-avatar { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .isp-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .isp-username { font-size: 0.78rem; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
+    .isp-status { margin-right: auto; flex-shrink: 0; }
+
+    /* Card info rows */
+    .isp-info { display: flex; flex-direction: column; gap: 7px; }
+    .isp-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .isp-row .lbl { color: var(--text-muted); font-size: 0.78rem; min-width: 60px; }
+    .isp-row .val { color: var(--text-primary); font-weight: 500; }
+
+    /* Card footer actions */
+    .isp-actions {
+      display: flex;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .isp-actions .btn { flex: 1; min-width: 70px; font-size: 0.82rem; padding: 7px 10px; justify-content: center; display: flex; align-items: center; gap: 4px; }
+
+    /* Topbar mobile */
+    @media (max-width: 640px) {
+      .topbar { flex-wrap: wrap !important; height: auto !important; padding: 10px 12px !important; gap: 8px; }
+      .topbar-actions { flex-wrap: wrap; gap: 6px; }
+      .topbar-actions .btn { font-size: 0.74rem !important; padding: 6px 9px !important; }
+      .topbar-title h1 { font-size: 0.95rem !important; }
+      .topbar-title p  { font-size: 0.7rem !important; }
+      .page-content { padding: 12px !important; }
+      .dist-grid { grid-template-columns: 1fr; gap: 12px; }
+    }
+    @media (min-width: 641px) and (max-width: 960px) {
+      .dist-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Search bar ── */
+    .search-wrap {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .search-wrap .search-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .search-wrap .clear-btn {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      display: none;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+    .search-wrap .clear-btn:hover { color: var(--text-primary); }
+    .search-wrap input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      padding: 11px 42px 11px 40px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-wrap input::placeholder { color: var(--text-muted); }
+    .search-wrap input:focus {
+      border-color: var(--accent-color, #6366f1);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+    .results-count {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+<div id="toast-container" class="toast-container"></div>
+<div style="background:var(--bg-primary);">
+  <header class="topbar">
+    <div class="topbar-title"><h1>👥 حسابات الموزعين (ISPs)</h1><p>إنشاء وإدارة حسابات الموزعين للنظام</p></div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة مستخدم (ISP)</button>
+      <button class="btn btn-secondary btn-sm" onclick="Modal.show('change-pass-modal')">🔑 تغيير كلمة السر</button>
+      <button class="btn btn-danger btn-sm" id="logout-btn">🚪 تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <!-- Search Bar -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        id="search-input"
+        placeholder="ابحث بالاسم أو رقم الهاتف أو اسم الشركة..."
+        oninput="filterDistributors(this.value)"
+      />
+      <button class="clear-btn" id="clear-search" onclick="clearSearch()">✕</button>
+    </div>
+    <div class="results-count" id="results-count"></div>
+
+    <div id="dist-cards" class="dist-grid">
+      <div class="dist-loading">⏳ جارٍ التحميل...</div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="dist-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="dist-modal-title">👥 إضافة مستخدم ISP جديد</h3>
+      <button class="modal-close" onclick="Modal.hide('dist-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="dist-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">الاسم الكامل *</label>
+          <input type="text" id="d-fullname" class="form-control" placeholder="محمد الأحمد" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">اسم المستخدم *</label>
+          <input type="text" id="d-username" class="form-control" placeholder="mohamad123" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">اسم الشركة</label>
+          <input type="text" id="d-company" class="form-control" placeholder="شركة الإنترنت السريع" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">رقم الهاتف</label>
+          <input type="tel" id="d-phone" class="form-control" placeholder="0911234567" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="pass-label">كلمة المرور * (8 أحرف على الأقل)</label>
+        <input type="password" id="d-password" class="form-control" placeholder="كلمة مرور قوية" />
+      </div>
+      <div class="form-group" id="active-field" style="display:none">
+        <label class="form-label">الحالة</label>
+        <select id="d-active" class="form-control">
+          <option value="1">نشط</option>
+          <option value="0">معطّل</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">حالة الاشتراك</label>
+          <select id="d-sub-status" class="form-control" onchange="onSubscriptionStatusChange(this.value)">
+            <option value="trial">تجريبي 15 يوم</option>
+            <option value="active">نشط (مدفوع)</option>
+            <option value="expired">منتهي الصلاحية</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">تاريخ انتهاء الاشتراك</label>
+          <input type="date" id="d-sub-expires" class="form-control" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('dist-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveDistributor()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="change-pass-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 class="modal-title">🔑 تغيير كلمة مرور المدير</h3>
+      <button class="modal-close" onclick="Modal.hide('change-pass-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">كلمة المرور الحالية *</label>
+        <input type="password" id="cp-current" class="form-control" placeholder="كلمة المرور الحالية" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">كلمة المرور الجديدة * (8 أحرف على الأقل)</label>
+        <input type="password" id="cp-new" class="form-control" placeholder="كلمة المرور الجديدة" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">تأكيد كلمة المرور الجديدة *</label>
+        <input type="password" id="cp-confirm" class="form-control" placeholder="أعد كتابة كلمة المرور الجديدة" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('change-pass-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="changePassword()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Collector Modal -->
+<div class="modal-overlay" id="collector-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="collector-modal-title">➕ إضافة جابي جديد</h3>
+      <button class="modal-close" onclick="Modal.hide('collector-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="col-id" />
+      <input type="hidden" id="col-parent-id" />
+      
+      <div class="form-group">
+        <label class="form-label">الاسم الكامل *</label>
+        <input type="text" id="col-fullname" class="form-control" placeholder="مثال: أحمد العلي" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">اسم المستخدم * (يستخدم لتسجيل الدخول)</label>
+        <input type="text" id="col-username" class="form-control" placeholder="مثال: ahmed_collector" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="col-pass-label">كلمة المرور * (8 أحرف على الأقل)</label>
+        <input type="password" id="col-password" class="form-control" placeholder="كلمة مرور الجابي" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">📍 الأحياء المصرح بها للجابي *</label>
+        <div id="col-neighborhoods-list" style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+          <!-- Checkboxes will be rendered here dynamically -->
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="col-new-neighborhood" class="form-control" style="font-size: 0.85rem;" placeholder="إضافة حي جديد غير موجود بالقائمة..." />
+          <button class="btn btn-secondary btn-sm" type="button" onclick="addNewNeighborhoodToColList()">➕ إضافة</button>
+        </div>
+        <small style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block;">سيتمكن الجابي من رؤية المشتركين وجباية فواتير الأحياء المحددة فقط.</small>
+      </div>
+      <div class="form-group" id="col-active-field" style="display:none">
+        <label class="form-label">الحالة</label>
+        <select id="col-active" class="form-control">
+          <option value="1">نشط</option>
+          <option value="0">معطّل</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.hide('collector-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveCollector()">💾 حفظ الجابي</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script>
+let distributors = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Only superadmin can access this page
+  const user = API.getCurrentUser();
+  if (user?.role !== 'superadmin') {
+    window.location.href = 'admin.html';
+    return;
+  }
+  document.getElementById('logout-btn')?.addEventListener('click', logout);
+  await loadDistributors();
+});
+
+async function loadDistributors() {
+  const res = await API.get('/distributors');
+  if (!res?.success) { Toast.error('فشل تحميل الموزعين'); return; }
+  distributors = res.data;
+
+  const container = document.getElementById('dist-cards');
+  if (!distributors.length) {
+    container.innerHTML = `<div class="dist-empty"><div class="ei">🏢</div><h3>لا يوجد موزعون بعد</h3><p>اضغط على "إضافة مستخدم" لإضافة أول موزع</p></div>`;
+    return;
+  }
+
+  container.innerHTML = distributors.map((d) => {
+    const collectorsHtml = (d.collectors && d.collectors.length)
+      ? d.collectors.map(col => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-size:0.8rem;">
+            <div style="flex:1; padding-left:8px;">
+              <strong style="color:var(--text-primary);">${col.full_name}</strong>
+              <span style="color:var(--text-muted); font-size:0.75rem;">(@${col.username})</span>
+              <div style="color:var(--text-muted); font-size:0.72rem; margin-top:2px;">📍 ${col.allowed_neighborhoods || 'كل الأحياء'}</div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span class="badge ${col.is_active ? 'badge-success' : 'badge-danger'}" style="font-size:0.65rem; padding:2px 6px;">
+                ${col.is_active ? 'نشط' : 'معطّل'}
+              </span>
+              <button class="btn-action btn-action-edit" style="width:24px; height:24px;" onclick="editCollector(${d.id}, ${col.id})" title="تعديل"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+              <button class="btn-action btn-action-delete" style="width:24px; height:24px;" onclick="deleteCollector(${col.id})" title="حذف"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+            </div>
+          </div>
+        `).join('')
+      : '<p style="font-size:0.75rem; color:var(--text-muted); margin:0; padding:10px 0; text-align:center;">لا يوجد جباة بعد لهذا الموزع</p>';
+
+    let subStatusBadge = '';
+    if (d.subscription_status === 'trial') {
+      subStatusBadge = `<span class="badge" style="background:rgba(234,179,8,0.12); color:#eab308; font-size:0.72rem; padding:2px 6px;">⏳ تجريبي</span>`;
+    } else if (d.subscription_status === 'active') {
+      subStatusBadge = `<span class="badge" style="background:rgba(34,197,94,0.12); color:#22c55e; font-size:0.72rem; padding:2px 6px;">✅ نشط</span>`;
+    } else if (d.subscription_status === 'expired') {
+      subStatusBadge = `<span class="badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-size:0.72rem; padding:2px 6px;">❌ منتهي</span>`;
+    } else {
+      subStatusBadge = `<span class="badge" style="background:rgba(234,179,8,0.12); color:#eab308; font-size:0.72rem; padding:2px 6px;">⏳ تجريبي</span>`;
+    }
+
+    return `
+      <div class="isp-card ${d.is_active ? '' : 'inactive'}">
+        <div class="isp-card-head">
+          <div class="isp-avatar">${d.full_name.charAt(0)}</div>
+          <div>
+            <div class="isp-name">${d.full_name}</div>
+            <div class="isp-username">@${d.username}</div>
+          </div>
+          <div class="isp-status">
+            ${d.is_active
+              ? '<span class="badge badge-success">✅ نشط</span>'
+              : '<span class="badge badge-danger">❌ معطّل</span>'}
+          </div>
+        </div>
+
+        <div class="isp-info">
+          ${d.company_name ? `<div class="isp-row"><span class="lbl">🏢 الشركة</span><span class="val">${d.company_name}</span></div>` : ''}
+          ${d.phone       ? `<div class="isp-row"><span class="lbl">📞 الهاتف</span><span class="val">${d.phone}</span></div>` : ''}
+          <div class="isp-row"><span class="lbl">👥 الزبائن</span><span class="val">${d.customer_count} زبون</span></div>
+          <div class="isp-row">
+            <span class="lbl">🔑 الاشتراك</span>
+            <span class="val" style="display:flex; align-items:center; gap:6px;">
+              ${subStatusBadge}
+              ${d.subscription_expires_at ? `<span style="font-size:0.72rem; color:var(--text-muted); font-family: monospace;">${formatDate(d.subscription_expires_at)}</span>` : ''}
+            </span>
+          </div>
+          <div class="isp-row"><span class="lbl">📅 الإنشاء</span><span class="val">${formatDate(d.created_at)}</span></div>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);">
+          <strong style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px;">📋 الجباة التابعون له:</strong>
+          <div style="max-height:160px; overflow-y:auto; padding-left:4px;">
+            ${collectorsHtml}
+          </div>
+        </div>
+
+        <div class="isp-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editDistributor(${d.id})">✏️ تعديل</button>
+          <button class="btn ${d.is_active ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleDistributorStatus(${d.id}, '${d.full_name}', ${d.is_active})">
+            ${d.is_active ? '🚫 تعطيل' : '✅ تفعيل'}
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteDistributor(${d.id})">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Update results count
+  document.getElementById('results-count').textContent = `إجمالي: ${distributors.length} موزع`;
+}
+
+// ── Filter by name / phone / company ──────────────────────────
+function filterDistributors(query) {
+  const q = query.trim().toLowerCase();
+  const clearBtn = document.getElementById('clear-search');
+  const countEl  = document.getElementById('results-count');
+  clearBtn.style.display = q ? 'block' : 'none';
+
+  const filtered = q
+    ? distributors.filter(d =>
+        (d.full_name    || '').toLowerCase().includes(q) ||
+        (d.phone        || '').toLowerCase().includes(q) ||
+        (d.company_name || '').toLowerCase().includes(q) ||
+        (d.username     || '').toLowerCase().includes(q)
+      )
+    : distributors;
+
+  const container = document.getElementById('dist-cards');
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="dist-empty"><div class="ei">🔍</div><h3>لا توجد نتائج</h3><p>لم يُعثر على موزع يطابق "${query}"</p></div>`;
+    countEl.textContent = 'لا توجد نتائج';
+    return;
+  }
+
+  countEl.textContent = `${filtered.length} من ${distributors.length} موزع`;
+  container.innerHTML = filtered.map((d) => `
+    <div class="isp-card ${d.is_active ? '' : 'inactive'}">
+      <div class="isp-card-head">
+        <div class="isp-avatar">${d.full_name.charAt(0)}</div>
+        <div>
+          <div class="isp-name">${d.full_name}</div>
+          <div class="isp-username">@${d.username}</div>
+        </div>
+        <div class="isp-status">
+          ${d.is_active
+            ? '<span class="badge badge-success">✅ نشط</span>'
+            : '<span class="badge badge-danger">❌ معطّل</span>'}
+        </div>
+      </div>
+      <div class="isp-info">
+        ${d.company_name ? `<div class="isp-row"><span class="lbl">🏢 الشركة</span><span class="val">${d.company_name}</span></div>` : ''}
+        ${d.phone       ? `<div class="isp-row"><span class="lbl">📞 الهاتف</span><span class="val">${d.phone}</span></div>` : ''}
+        <div class="isp-row"><span class="lbl">👥 الزبائن</span><span class="val">${d.customer_count} زبون</span></div>
+        <div class="isp-row"><span class="lbl">📅 الإنشاء</span><span class="val">${formatDate(d.created_at)}</span></div>
+      </div>
+      <div class="isp-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editDistributor(${d.id})">✏️ تعديل</button>
+        <button class="btn ${d.is_active ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleDistributorStatus(${d.id}, '${d.full_name}', ${d.is_active})">
+          ${d.is_active ? '🚫 تعطيل' : '✅ تفعيل'}
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDistributor(${d.id})">🗑️ حذف</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearSearch() {
+  const inp = document.getElementById('search-input');
+  inp.value = '';
+  inp.focus();
+  document.getElementById('clear-search').style.display = 'none';
+  filterDistributors('');
+}
+
+function openAddModal() {
+  document.getElementById('dist-modal-title').textContent = '👥 إضافة مستخدم ISP جديد';
+  document.getElementById('dist-id').value = '';
+  document.getElementById('d-fullname').value = '';
+  document.getElementById('d-username').value = '';
+  document.getElementById('d-company').value = '';
+  document.getElementById('d-phone').value = '';
+  document.getElementById('d-password').value = '';
+  document.getElementById('d-username').disabled = false;
+  document.getElementById('pass-label').textContent = 'كلمة المرور * (8 أحرف على الأقل)';
+  document.getElementById('active-field').style.display = 'none';
+  
+  // Set default subscription to trial and calculate date
+  document.getElementById('d-sub-status').value = 'trial';
+  const fifteenDays = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  document.getElementById('d-sub-expires').value = fifteenDays;
+  
+  Modal.show('dist-modal');
+}
+
+function editDistributor(id) {
+  const d = distributors.find((x) => x.id === id);
+  if (!d) return;
+  document.getElementById('dist-modal-title').textContent = '✏️ تعديل حساب الموزع';
+  document.getElementById('dist-id').value = d.id;
+  document.getElementById('d-fullname').value = d.full_name;
+  document.getElementById('d-username').value = d.username;
+  document.getElementById('d-username').disabled = true;
+  document.getElementById('d-company').value = d.company_name || '';
+  document.getElementById('d-phone').value = d.phone || '';
+  document.getElementById('d-password').value = '';
+  document.getElementById('d-active').value = d.is_active ? '1' : '0';
+  document.getElementById('pass-label').textContent = 'كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)';
+  document.getElementById('active-field').style.display = 'block';
+  
+  // Load subscription info
+  document.getElementById('d-sub-status').value = d.subscription_status || 'trial';
+  document.getElementById('d-sub-expires').value = d.subscription_expires_at ? d.subscription_expires_at.split(' ')[0] : '';
+  
+  Modal.show('dist-modal');
+}
+
+async function saveDistributor() {
+  const id = document.getElementById('dist-id').value;
+  const fullName = document.getElementById('d-fullname').value.trim();
+  const username = document.getElementById('d-username').value.trim();
+  const password = document.getElementById('d-password').value;
+  const companyName = document.getElementById('d-company').value.trim();
+  const phone = document.getElementById('d-phone').value.trim();
+  const subscriptionStatus = document.getElementById('d-sub-status').value;
+  const subscriptionExpiresAt = document.getElementById('d-sub-expires').value || null;
+
+  if (!fullName) { Toast.warning('الاسم الكامل مطلوب'); return; }
+
+  if (!id) {
+    // Create
+    if (!username || username.length < 3) { Toast.warning('اسم المستخدم يجب 3 أحرف على الأقل'); return; }
+    if (!password || password.length < 8) { Toast.warning('كلمة المرور يجب 8 أحرف على الأقل'); return; }
+
+    const res = await API.post('/distributors', { 
+      username, 
+      fullName, 
+      password, 
+      companyName: companyName || undefined, 
+      phone: phone || undefined,
+      subscriptionStatus,
+      subscriptionExpiresAt
+    });
+    if (res?.success) { Toast.success('تم إنشاء الموزع بنجاح ✅'); Modal.hide('dist-modal'); await loadDistributors(); }
+    else Toast.error(res?.message || 'فشل الإنشاء');
+  } else {
+    // Update
+    const body = { 
+      fullName, 
+      companyName: companyName || undefined, 
+      phone: phone || undefined,
+      subscriptionStatus,
+      subscriptionExpiresAt
+    };
+    if (password) { if (password.length < 8) { Toast.warning('كلمة المرور يجب 8 أحرف على الأقل'); return; } body.password = password; }
+    body.isActive = document.getElementById('d-active').value === '1';
+
+    const res = await API.put(`/distributors/${id}`, body);
+    if (res?.success) { Toast.success('تم التحديث بنجاح'); Modal.hide('dist-modal'); await loadDistributors(); }
+    else Toast.error(res?.message || 'فشل التحديث');
+  }
+}
+
+function onSubscriptionStatusChange(val) {
+  if (val === 'trial') {
+    const fifteenDays = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    document.getElementById('d-sub-expires').value = fifteenDays;
+  }
+}
+
+async function deleteDistributor(id) {
+  const dist = distributors.find(d => d.id === id);
+  const name = dist ? dist.full_name : 'هذا الموزع';
+  Modal.confirm(`هل أنت متأكد من حذف "${name}" نهائياً؟ سيتم حذف جميع زبائنه ومدفوعاته!`, async () => {
+    const res = await API.delete(`/distributors/${id}`);
+    if (res?.success) { Toast.success(res.message || 'تم الحذف بنجاح 🗑️'); await loadDistributors(); }
+    else Toast.error(res?.message || 'فشل الحذف');
+  });
+}
+
+async function toggleDistributorStatus(id, name, isActive) {
+  const action = isActive ? 'تعطيل' : 'تفعيل';
+  Modal.confirm(`هل تريد ${action} حساب الموزع "${name}"؟`, async () => {
+    const res = await API.put(`/distributors/${id}`, { isActive: !isActive });
+    if (res?.success) { Toast.success(`تم ${action} الموزع بنجاح`); await loadDistributors(); }
+    else Toast.error(res?.message || 'فشل العملية');
+  });
+}
+async function changePassword() {
+  const current = document.getElementById('cp-current').value;
+  const newPass  = document.getElementById('cp-new').value;
+  const confirm  = document.getElementById('cp-confirm').value;
+
+  if (!current)              { Toast.warning('أدخل كلمة المرور الحالية'); return; }
+  if (newPass.length < 8)    { Toast.warning('كلمة المرور الجديدة يجب 8 أحرف على الأقل'); return; }
+  if (newPass !== confirm)   { Toast.warning('كلمة المرور الجديدة غير متطابقة'); return; }
+
+  const res = await API.put('/auth/change-password', { currentPassword: current, newPassword: newPass });
+  if (res?.success) {
+    Toast.success('✅ تم تغيير كلمة المرور بنجاح');
+    Modal.hide('change-pass-modal');
+    document.getElementById('cp-current').value = '';
+    document.getElementById('cp-new').value = '';
+    document.getElementById('cp-confirm').value = '';
+  } else {
+    Toast.error(res?.message || 'فشل تغيير كلمة المرور');
+  }
+}
+
+// ── Collectors management functions ──
+
+let allNeighborhoods = [];
+
+async function fetchNeighborhoods(distributorId) {
+  const res = await API.get('/customers/neighborhoods?distributorId=' + distributorId);
+  if (res?.success) {
+    allNeighborhoods = res.data;
+  }
+}
+
+function renderNeighborhoodsChecklist(allowedString = '') {
+  const allowed = allowedString ? allowedString.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const list = Array.from(new Set([...allNeighborhoods, ...allowed])).filter(Boolean);
+  const container = document.getElementById('col-neighborhoods-list');
+  if (!list.length) {
+    container.innerHTML = `<p style="font-size:0.75rem; color:var(--text-muted); margin:0; text-align:center; padding:10px;">لا توجد أحياء مسجلة بالنظام بعد. أضف حياً جديداً في الأسفل.</p>`;
+    return;
+  }
+  container.innerHTML = list.map(nh => {
+    const checked = allowed.includes(nh) ? 'checked' : '';
+    return `
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:var(--text-primary); margin:0;">
+        <input type="checkbox" class="col-nh-checkbox" value="${nh}" ${checked} />
+        <span>${nh}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+function addNewNeighborhoodToColList() {
+  const input = document.getElementById('col-new-neighborhood');
+  const value = input.value.trim();
+  if (!value) return;
+  if (!allNeighborhoods.includes(value)) {
+    allNeighborhoods.push(value);
+  }
+  const checked = getSelectedNeighborhoodsList();
+  if (!checked.includes(value)) {
+    checked.push(value);
+  }
+  renderNeighborhoodsChecklist(checked.join(','));
+  input.value = '';
+}
+
+function getSelectedNeighborhoodsList() {
+  const checkboxes = document.querySelectorAll('.col-nh-checkbox');
+  const checked = [];
+  checkboxes.forEach(cb => {
+    if (cb.checked) checked.push(cb.value.trim());
+  });
+  return checked;
+}
+
+async function openAddCollectorModal(parentId) {
+  await fetchNeighborhoods(parentId);
+  renderNeighborhoodsChecklist('');
+  document.getElementById('collector-modal-title').textContent = '➕ إضافة جابي جديد';
+  document.getElementById('col-id').value = '';
+  document.getElementById('col-parent-id').value = parentId;
+  document.getElementById('col-fullname').value = '';
+  document.getElementById('col-username').value = '';
+  document.getElementById('col-username').disabled = false;
+  document.getElementById('col-password').value = '';
+  document.getElementById('col-new-neighborhood').value = '';
+  document.getElementById('col-active').value = '1';
+  document.getElementById('col-pass-label').textContent = 'كلمة المرور * (8 أحرف على الأقل)';
+  document.getElementById('col-active-field').style.display = 'none';
+  Modal.show('collector-modal');
+}
+
+async function editCollector(distId, colId) {
+  const dist = distributors.find(d => d.id === distId);
+  if (!dist) return;
+  const col = dist.collectors.find(c => c.id === colId);
+  if (!col) return;
+
+  await fetchNeighborhoods(distId);
+  renderNeighborhoodsChecklist(col.allowed_neighborhoods || '');
+
+  document.getElementById('collector-modal-title').textContent = '✏️ تعديل حساب الجابي';
+  document.getElementById('col-id').value = col.id;
+  document.getElementById('col-parent-id').value = distId;
+  document.getElementById('col-fullname').value = col.full_name;
+  document.getElementById('col-username').value = col.username;
+  document.getElementById('col-username').disabled = true;
+  document.getElementById('col-password').value = '';
+  document.getElementById('col-new-neighborhood').value = '';
+  document.getElementById('col-active').value = col.is_active ? '1' : '0';
+  document.getElementById('col-pass-label').textContent = 'كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)';
+  document.getElementById('col-active-field').style.display = 'block';
+  Modal.show('collector-modal');
+}
+
+async function saveCollector() {
+  const id = document.getElementById('col-id').value;
+  const parentId = parseInt(document.getElementById('col-parent-id').value);
+  const fullName = document.getElementById('col-fullname').value.trim();
+  const username = document.getElementById('col-username').value.trim();
+  const password = document.getElementById('col-password').value;
+  const allowedNeighborhoods = getSelectedNeighborhoodsList().join(', ');
+
+  if (!fullName) { Toast.warning('الاسم الكامل مطلوب'); return; }
+  if (!allowedNeighborhoods) { Toast.warning('الرجاء تحديد حي واحد على الأقل للمشتركين'); return; }
+
+  if (!id) {
+    if (!username || username.length < 3) { Toast.warning('اسم المستخدم يجب 3 أحرف على الأقل'); return; }
+    if (!password || password.length < 8) { Toast.warning('كلمة المرور يجب 8 أحرف على الأقل'); return; }
+
+    const res = await API.post('/distributors/collectors', {
+      username, fullName, password, parentId, allowedNeighborhoods
+    });
+    if (res?.success) {
+      Toast.success('تم إضافة الجابي بنجاح ✅');
+      Modal.hide('collector-modal');
+      await loadDistributors();
+    } else {
+      Toast.error(res?.message || 'فشل إضافة الجابي');
+    }
+  } else {
+    const body = {
+      fullName, allowedNeighborhoods,
+      isActive: parseInt(document.getElementById('col-active').value)
+    };
+    if (password) {
+      if (password.length < 8) { Toast.warning('كلمة المرور يجب 8 أحرف على الأقل'); return; }
+      body.password = password;
+    }
+
+    const res = await API.put(`/distributors/collectors/${id}`, body);
+    if (res?.success) {
+      Toast.success('تم التحديث بنجاح');
+      Modal.hide('collector-modal');
+      await loadDistributors();
+    } else {
+      Toast.error(res?.message || 'فشل التحديث');
+    }
+  }
+}
+
+async function deleteCollector(colId) {
+  Modal.confirm('هل أنت متأكد من حذف حساب هذا الجابي نهائياً؟', async () => {
+    const res = await API.delete(`/distributors/collectors/${colId}`);
+    if (res?.success) {
+      Toast.success('تم حذف الجابي بنجاح 🗑️');
+      await loadDistributors();
+    } else {
+      Toast.error(res?.message || 'فشل الحذف');
+    }
+  });
+}
+</script>
+</body>
+</html>
