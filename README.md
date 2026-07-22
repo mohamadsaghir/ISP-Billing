@@ -1,119 +1,72 @@
-# ISP Billing System (نظام إدارة موزعي الإنترنت)
+# ISP Billing System
 
-A comprehensive, lightweight, and offline-first billing and management system designed for local internet service providers (ISPs) and distributors. 
+A comprehensive, lightweight, and offline-first billing and management system designed for local internet service providers (ISPs) and distributors.
 
-نظام متكامل وخفيف الوزن لإدارة حسابات وفواتير المشتركين لموزعي الإنترنت المحليين، مصمم ليعمل بكفاءة عالية وبشكل مباشر، مع دعم كامل للعمل دون اتصال بالشبكة (Offline-First).
+## Table of Contents
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Installation and Setup](#installation-and-setup)
+- [Default Credentials](#default-credentials)
+- [Auto-Login Bypass](#auto-login-bypass)
+- [Admin Access](#admin-access)
 
----
+## Key Features
+- Stats Dashboard: View monthly earnings, paid/unpaid subscriptions, and total outstanding debt.
+- Customer Management: Add, edit, delete, and suspend customer accounts.
+- Automated Billing: Generate monthly bills automatically via cron jobs.
+- Obligations and Extra Fees: Record additional costs for customers or general expenses for the distributor.
+- WhatsApp and SMS Integration: Send payment receipts and outstanding balance reminders to customers.
+- PWA and Offline Support: Installable web app with local caching and offline sync.
+- Auto-Login Bypass: Bypasses the login screen to access the distributor dashboard directly.
 
-## 📖 جدول المحتويات (Table of Contents)
-- [المميزات الرئيسية (Key Features)](#المميزات-الرئيسية-key-features)
-- [تقنيات العمل (Tech Stack)](#تقنيات-العمل-tech-stack)
-- [كيفية التثبيت والتشغيل (Installation & Setup)](#كيفية-التثبيت-والتشغيل-installation--setup)
-- [تجاوز صفحة تسجيل الدخول (Auto-Login Bypass)](#تجاوز-صفحة-تسجيل-الدخول-auto-login-bypass)
-- [إدارة النظام والمسؤولين (SuperAdmin Access)](#إدارة-النظام-والمسؤولين-superadmin-access)
+## Tech Stack
+### Backend
+- Node.js & Express
+- SQLite (better-sqlite3)
+- JWT (JSON Web Tokens)
+- Helmet & CORS
 
----
+### Frontend
+- HTML5 & CSS3 (Vanilla)
+- JavaScript (Vanilla)
+- SheetJS (XLSX)
 
-## المميزات الرئيسية (Key Features)
+## Installation and Setup
 
-* **لوحة تحكم إحصائية (Stats Dashboard):** عرض تفصيلي للأرباح الشهرية، الاشتراكات المدفوعة، وغير المدفوعة، وإجمالي الديون المستحقة.
-* **إدارة المشتركين (Customer Management):** إضافة، تعديل، حذف، وتجميد حسابات المشتركين مع تحديد المبلغ الشهري وتاريخ الاشتراك بدقة.
-* **نظام فواتير تلقائي (Automated Billing):** إصدار فواتير شهرية تلقائياً للمشتركين النشطين في بداية كل شهر عبر نظام جدولة المهام (Cron Jobs).
-* **إدارة الذمم والمستحقات (Obligations & Extra Fees):** إمكانية إضافة تكاليف ومستحقات إضافية على المشتركين أو تسجيل مصاريف على الموزع نفسه.
-* **تأكيدات وتذكيرات عبر واتساب (WhatsApp & SMS Integration):** إرسال وصولات دفع وتنبيهات بالمستحقات للزبائن بكبسة زر واحدة.
-* **دعم العمل دون اتصال بالشبكة (PWA & Offline Support):** التطبيق مجهز كـ Progressive Web App قابل للتثبيت على الهواتف والأجهزة مع تخزين احتياطي للبيانات في المتصفح ومزامنتها تلقائياً عند عودة الاتصال.
-* **تسجيل دخول تلقائي مباشر (Direct Dashboard Bypass):** تجاوز شاشة تسجيل الدخول للدخول الفوري كـ "موزع" دون الحاجة لإدخال بيانات كل مرة.
+### Prerequisites
+- Node.js (version 18 or higher)
 
----
-
-## تقنيات العمل (Tech Stack)
-
-### الخلفية (Backend)
-- **Node.js & Express**: لبناء خادم الويب وإدارة مسارات الـ API.
-- **SQLite (better-sqlite3)**: قاعدة بيانات خفيفة وسريعة ومخزنة محلياً في ملف واحد.
-- **JWT (JSON Web Tokens)**: لإدارة الجلسات للمسؤولين.
-- **Helmet & CORS**: لحماية خادم الويب وتهيئة الأمان.
-
-### الواجهة (Frontend)
-- **HTML5 & CSS3 (Vanilla)**: واجهة مستخدم متجاوبة (Responsive) وتصميم عصري وداكن مريح للعين.
-- **JavaScript (Vanilla)**: لإدارة العمليات ومزامنة البيانات محلياً (IndexedDB / LocalStorage).
-- **SheetJS (XLSX)**: لتصدير واستيراد بيانات المشتركين من وإلى ملفات إكسل.
-
----
-
-## كيفية التثبيت والتشغيل (Installation & Setup)
-
-### المتطلبات الأساسية (Prerequisites)
-تأكد من تثبيت بيئة **[Node.js](https://nodejs.org/)** (الإصدار 18 فما فوق).
-
-### خطوات التثبيت (Installation Steps)
-1. قم بفتح مجلد المشروع في واجهة الأوامر (Terminal/CMD).
-2. قم بتثبيت المكونات البرمجية المطلوبة عن طريق تشغيل الأمر التالي:
+### Steps
+1. Install dependencies:
    ```bash
    npm install
    ```
-3. قم بإنشاء ملف الإعدادات البيئية عن طريق نسخ ملف `.env.example` وتسميته `.env`:
-   * على أنظمة Windows (CMD):
-     ```cmd
-     copy .env.example .env
+2. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+3. Run the backend server:
+   - Double-click "تشغيل_الخادم.bat" or run:
+     ```bash
+     npm start
      ```
-   * أو قم بإنشاء ملف يدوي باسم `.env` واملأ المتغيرات كالتالي:
-     ```env
-     PORT=3000
-     NODE_ENV=production
-     JWT_ACCESS_SECRET=your_super_secret_access_key_here_min_32_chars
-     JWT_REFRESH_SECRET=your_super_secret_refresh_key_here_min_32_chars
-     DB_PATH=./database.sqlite
-     SUPERADMIN_USERNAME=admin
-     SUPERADMIN_PASSWORD=Admin@123456
-     SUPERADMIN_FULLNAME=مدير النظام
-     APP_NAME=ISP Billing System
-     APP_URL=http://localhost:3000
-     ```
+4. Open the frontend:
+   - Double-click "فتح_البرنامج.bat" or open "http://localhost:3000" in your browser.
 
-### تشغيل البرنامج (Running the Application)
-لتسهيل العمل، تم تضمين ملفات تشغيل سريعة بنقرة واحدة (One-Click Launchers) لأنظمة Windows:
+## Default Credentials
 
-1. **تشغيل خادم الويب:** قم بتشغيل الملف **`تشغيل_الخادم.bat`** (يقوم بتشغيل `npm start`).
-2. **فتح واجهة البرنامج:** قم بتشغيل الملف **`فتح_البرنامج.bat`** (يقوم بفتح المتصفح على الرابط `http://localhost:3000`).
+### Distributor Account (Auto-Logged In)
+- Username: mohamad
+- Password: (Bypassed automatically, no password needed)
 
-بدلاً من ذلك، يمكنك تشغيلهم عبر واجهة الأوامر:
-```bash
-# تشغيل الخادم
-npm start
+### SuperAdmin Account (Admin Panel)
+- Username: admin
+- Password: Admin@123456
 
-# للتشغيل في بيئة التطوير (مع مراقبة التغييرات تلقائياً)
-npm run dev
-```
+## Auto-Login Bypass
+- The system automatically authenticates standard distributor requests by falling back to the first active distributor user in the database (mohamad).
+- When loading index.html, a dummy token is generated in localStorage, and the page redirects to dashboard.html instantly.
 
----
-
-## تجاوز شاشة تسجيل الدخول (Auto-Login Bypass)
-
-تم تعديل آلية التحقق في النظام لتجاوز شاشة تسجيل الدخول التقليدية للموزعين وجعل الواجهة تفتح مباشرة على لوحة التحكم:
-
-1. **في الواجهة الأمامية (`public/js/api.js` & `index.html`):**
-   * عند فتح الصفحة الرئيسية، يتم التحقق من وجود رمز مصادقة.
-   * في حال عدم وجود رمز، يتم فوراً وتلقائياً حقن رمز مصادقة تجريبي وتعيين حساب الموزع الافتراضي (`mohamad`).
-   * يتم التحويل فوراً لصفحة لوحة التحكم (`dashboard.html`) دون أي وميض أو تأخير.
-   * يتم تحديث وحفظ تفاصيل ملف المستخدم الحقيقي ديناميكياً من الخادم في الخلفية.
-
-2. **في الخلفية (`server/middleware/auth.js`):**
-   * تم تعديل وسيط التحقق `authenticate` بحيث إذا لم يتلقَ طلب الـ API رمز مصادقة حقيقي، يقوم تلقائياً بالبحث عن أول موزع نشط مسجل بقاعدة البيانات واعتماده لتنفيذ العملية دون مشاكل أو قيود.
-
----
-
-## إدارة النظام والمسؤولين (SuperAdmin Access)
-
-إذا كنت ترغب في إدارة الموزعين وإضافتهم أو تعديل باقاتهم، يمكنك الوصول للوحة المسؤول العام (SuperAdmin) كالتالي:
-
-1. توجه للمسار التالي في المتصفح: `http://localhost:3000/admin.html`
-2. قم بتسجيل الدخول باستخدام حساب المسؤول العام المفرتض (المسجل في ملف `.env`):
-   * **اسم المستخدم:** `admin`
-   * **كلمة المرور:** `Admin@123456`
-3. سيتم تحويلك إلى صفحة [users.html](file:///c:/Users/moham/Desktop/all%20projact/pos_netwoark/public/users.html) لإدارة كافة الموزعين والمحصلين بشكل كامل.
-
----
-
-&copy; 2026 ISP Billing System. جميع الحقوق محفوظة.
+## Admin Access
+- To access the admin panel, navigate to http://localhost:3000/admin.html
+- Login using the SuperAdmin credentials listed above.
