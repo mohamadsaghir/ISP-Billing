@@ -1,5 +1,9 @@
 'use strict';
 
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.protocol !== 'file:'
+  ? '/api'
+  : 'https://saghirdx2.win/api';
+
 // Auto-login setup if not logged in
 if (!localStorage.getItem('access_token')) {
   localStorage.setItem('access_token', 'header.eyJleHAiOjk5OTk5OTk5OTl9.signature');
@@ -13,7 +17,7 @@ if (!localStorage.getItem('access_token')) {
 }
 
 // Dynamically refresh current user info from server in the background
-fetch('api/auth/me', {
+fetch(`${API_BASE}/auth/me`, {
   headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
 })
 .then(res => res.json())
@@ -35,7 +39,7 @@ fetch('api/auth/me', {
  * Central API client with automatic JWT refresh
  */
 const API = (() => {
-  const BASE = 'api';
+  const BASE = API_BASE;
 
   function getCacheKey(path) {
     try {
